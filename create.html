@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<script>try{if(/[?&]edit=/.test(location.search))document.documentElement.classList.add("loading-edit");}catch(e){}</script>
 </head>
 <body>
 
@@ -32,6 +33,10 @@
 </nav>
 
 <div class="wrap">
+  <div class="edit-loading" id="editLoading">
+    <div class="edit-loading-spin"></div>
+    <p data-i18n="create.loading">Loading your page…</p>
+  </div>
   <div class="resume-bar" id="resumeBar" style="display:none"></div>
   <div class="create-head">
     <h1 data-i18n="create.head_h1">Build your broke page</h1>

@@ -342,7 +342,7 @@ function applyEditModeText() {
 async function loadForEdit(slug, t2) {
   let d = null;
   try { const res = await fetch(base + "api/get?slug=" + encodeURIComponent(slug)); if (res.ok) d = (await res.json()).data; } catch (e) {}
-  if (!d) { toast(t("toast.load_fail")); return; }
+  if (!d) { document.documentElement.classList.remove("loading-edit"); toast(t("toast.load_fail")); return; }
   $("#f-name").value = d.name || "";
   $("#f-handle").value = d.handle || slug;
   $("#f-story").value = d.story || "";
@@ -356,6 +356,7 @@ async function loadForEdit(slug, t2) {
   enterEditMode(slug, token);
   if (!token) toast(t("toast.no_edit_access"));
   buildChips(); buildEmoji(); buildLinks(); render();
+  document.documentElement.classList.remove("loading-edit"); // reveal the populated form (no default-content flash)
 }
 $("#publish").onclick = publish;
 $("#publishTop").onclick = (e) => { e.preventDefault(); publish(); };
@@ -414,6 +415,8 @@ function showResumeBar() {
 (function init() {
   const qp = new URLSearchParams(location.search);
   const editSlug = qp.get("edit");
+  const willEdit = editSlug && /^[a-z0-9-]{2,40}$/.test(editSlug);
+  if (!willEdit) document.documentElement.classList.remove("loading-edit"); // clear stray loading state (e.g. bad ?edit=)
   if (!editSlug) {
     const s = qp.get("status");
     if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) {
@@ -426,7 +429,7 @@ function showResumeBar() {
   window.I18N.apply();                                   // translate static [data-i18n] text
   document.title = t("title.create");
   buildChips(); buildEmoji(); buildLinks(); render();    // render defaults/draft first (no blank flash)
-  if (editSlug && /^[a-z0-9-]{2,40}$/.test(editSlug)) loadForEdit(editSlug, qp.get("t")); // then override async
+  if (willEdit) loadForEdit(editSlug, qp.get("t")); // then override async (clears loading-edit when done)
   else showResumeBar();                                  // surface an existing page to keep editing
 })();
 
