@@ -1,6 +1,7 @@
 /* No Money — core: broke-status presets, broke score, share-image renderer, sharing helpers.
    Zero runtime deps. Pages are stored server-side via short links (see /functions); no signup. */
 import "./style.css"; // bundled + hashed by Vite (loaded on every page that imports core)
+import "./i18n.js";   // window.I18N (lang + t)
 
 /* ---------------- broke statuses ---------------- */
 const STATUSES = {
@@ -9,6 +10,7 @@ const STATUSES = {
     tagline: "I spent my emergency fund on non-emergencies.",
     story: "I spent my emergency fund on things that were not emergencies.\nNow I'm surviving on instant noodles. Send help (or seasoning).",
     risk: "May eat the same flavor 9 days straight",
+    zh: { label: "泡面模式", tagline: "应急基金花在了不应急的地方。", story: "我把应急基金花在了根本不算应急的东西上。\n现在靠泡面续命。求支援（或者一包调料）。", risk: "可能连吃同一种口味九天" },
     msgs: [["Stay strong, soup soldier.", "anon"], ["Adding an egg = luxury. Treat yourself.", "kev"]],
   },
   rent: {
@@ -16,6 +18,7 @@ const STATUSES = {
     tagline: "Rent is due. My bank account disagrees.",
     story: "Rent is due. My bank account disagrees.\nI'm bridging the gap between 'broke' and 'boxes by the curb'.",
     risk: "Negotiating with a landlord and losing",
+    zh: { label: "房租恐慌", tagline: "房租到期了。我的余额不同意。", story: "房租到期了，我的银行余额表示不同意。\n我正在「破产」和「睡天桥」之间艰难过渡。", risk: "正在和房东谈判，且节节败退" },
     msgs: [["The floor is technically a bed too. Hang in there.", "anon"], ["Been there. Sending vibes + $.", "mara"]],
   },
   domain: {
@@ -23,6 +26,7 @@ const STATUSES = {
     tagline: "I bought domains instead of food. Again.",
     story: "I came here to build wealth.\nUnfortunately, I discovered premium domains.\nMy portfolio is strong. My fridge is empty.",
     risk: "May buy another domain instead of dinner",
+    zh: { label: "域名负债", tagline: "又把买饭钱拿去买域名了。", story: "我本是来搞钱的。\n结果发现了高价域名。\n我的资产很雄厚，我的冰箱很空。", risk: "可能又拿买菜钱去抢注域名" },
     msgs: [["Please stop checking ExpiredDomains.", "anon"], ["One more .io and you're done.", "ty"], ["Stay strong, investor.", "dev_jen"]],
   },
   crypto: {
@@ -30,6 +34,7 @@ const STATUSES = {
     tagline: "I was early. I was also catastrophically wrong.",
     story: "I was early. I was also catastrophically wrong.\nNow I'm funding my recovery arc one ramen at a time.\nNot financial advice — clearly.",
     risk: "Still insists 'it'll bounce back'",
+    zh: { label: "币圈重创", tagline: "我入场很早。也错得很彻底。", story: "我入场很早，也错得很彻底。\n如今靠泡面一口一口走回血路。\n这显然不构成投资建议。", risk: "还在嘴硬「它会反弹的」" },
     msgs: [["WAGMI. eventually. maybe.", "anon"], ["HODL your dignity at least.", "satoshi_lite"]],
   },
   student: {
@@ -37,6 +42,7 @@ const STATUSES = {
     tagline: "Studying hard. Eating soft.",
     story: "Studying hard. Eating soft.\nTuition took everything, including my will to cook.\nEvery coffee keeps me conscious in lectures.",
     risk: "Sustained entirely by free campus pizza events",
+    zh: { label: "学生模式", tagline: "学得很努力，吃得很清淡。", story: "学得很努力，吃得很清淡。\n学费掏空了我，连做饭的心气也一起掏空。\n每杯咖啡都让我在课上多撑一会儿。", risk: "全靠蹭学校免费披萨续命" },
     msgs: [["Future you will pay it forward.", "anon"], ["Ace those finals, broke legend.", "prof_no"]],
   },
   startup: {
@@ -44,6 +50,7 @@ const STATUSES = {
     tagline: "Pre-revenue, pre-funding, pre-lunch.",
     story: "We're pre-revenue, pre-funding, and pre-lunch.\nRunway is short. Vibes are immaculate.\nHelp us reach ramen profitability.",
     risk: "Will pivot before paying themselves",
+    zh: { label: "创业破产", tagline: "没收入、没融资、没午饭。", story: "我们没收入、没融资、还没吃午饭。\n现金跑道很短，氛围感很足。\n帮我们撑到「泡面级盈利」。", risk: "会先转型，再考虑给自己发工资" },
     msgs: [["To the moon (economy class).", "anon"], ["Default alive starts with a coffee.", "yc_reject"]],
   },
   freelance: {
@@ -51,6 +58,7 @@ const STATUSES = {
     tagline: "Invoices sent. Payments pending. Spirit broken.",
     story: "Invoices sent. Payments pending. Spirit broken.\nClients say 'the check is coming'. It is not coming.\nBridge me to net-30.",
     risk: "Owed money by 4 people, none replying",
+    zh: { label: "自由职业旱季", tagline: "发票发了，钱没到，心碎了。", story: "发票发了，款项待付，人快碎了。\n客户说「钱马上到」。钱不会到。\n帮我撑过这个回款周期。", risk: "四个人欠我钱，零个人回我消息" },
     msgs: [["Net-30 is a personality test. You're passing.", "anon"], ["Chasing that invoice for you in spirit.", "rin"]],
   },
 };
@@ -60,28 +68,44 @@ const STATUS_ORDER = ["ramen", "rent", "domain", "crypto", "student", "startup",
 /* full demo pages used on the landing page (p.html?demo=key).
    curated funny button labels — the buttons ARE part of the joke. */
 const DEMOS = {
-  ramen:   { name: "Mika",  handle: "ramen",         status: "ramen",  goal: 200, raised: 74,
+  ramen:   { name: "Mika",  handle: "ramen",         status: "ramen",  goal: 200, raised: 74, zhcta: "🍜 给我加个蛋",
     links: [{ kind: "ramen", url: "#", label: "🍜 Add an egg to my life" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#" }] },
-  rent:    { name: "Devon", handle: "rent",          status: "rent",   goal: 850, raised: 310,
+  rent:    { name: "Devon", handle: "rent",          status: "rent",   goal: 850, raised: 310, zhcta: "🏚️ 别让我露宿",
     links: [{ kind: "custom", url: "#", label: "🏚️ Keep me indoors" }, { kind: "paypal", url: "#" }, { kind: "coffee", url: "#" }] },
-  domain:  { name: "Mira",  handle: "domain-addict", status: "domain", goal: 500, raised: 210,
+  domain:  { name: "Mira",  handle: "domain-addict", status: "domain", goal: 500, raised: 210, zhcta: "🍜 请我吃泡面",
     links: [{ kind: "ramen", url: "#", label: "🍜 Buy me ramen" }, { kind: "custom", url: "#", label: "🛑 Stop my next domain purchase" }, { kind: "paypal", url: "#", label: "💸 Fund my recovery arc" }] },
-  crypto:  { name: "Sol",   handle: "crypto-loss",   status: "crypto", goal: 1000, raised: 137,
+  crypto:  { name: "Sol",   handle: "crypto-loss",   status: "crypto", goal: 1000, raised: 137, zhcta: "📉 资助我的回血",
     links: [{ kind: "custom", url: "#", label: "📉 Fund my recovery arc" }, { kind: "crypto", url: "#", label: "🪙 Send a coin that won't crash" }, { kind: "paypal", url: "#" }] },
-  student: { name: "Aria",  handle: "student",       status: "student", goal: 300, raised: 189,
+  student: { name: "Aria",  handle: "student",       status: "student", goal: 300, raised: 189, zhcta: "☕ 给我的期末续命",
     links: [{ kind: "coffee", url: "#", label: "☕ Caffeinate my finals" }, { kind: "custom", url: "#", label: "🍕 Diversify my pizza diet" }, { kind: "paypal", url: "#" }] },
 };
 
 const PAYMENT_KINDS = {
-  ramen:   { label: "🍜 Buy me ramen",        cls: "",    ex: "https://your-tip-link.com" },
-  coffee:  { label: "☕ Send emergency coffee", cls: "alt", ex: "https://buymeacoffee.com/you" },
-  paypal:  { label: "💸 PayPal me",            cls: "alt", ex: "https://paypal.me/you" },
-  kofi:    { label: "❤️ Ko-fi",                cls: "alt", ex: "https://ko-fi.com/you" },
-  bmc:     { label: "☕ Buy Me a Coffee",       cls: "alt", ex: "https://buymeacoffee.com/you" },
-  stripe:  { label: "💳 Card / Stripe",        cls: "alt", ex: "https://buy.stripe.com/xxxxxx" },
-  crypto:  { label: "🪙 Crypto wallet",         cls: "alt", ex: "0x… or your wallet address" },
-  wise:    { label: "🌍 Wise",                 cls: "alt", ex: "https://wise.com/pay/me/you" },
-  custom:  { label: "🔗 Support link",          cls: "alt", ex: "https://your-link.com" },
+  ramen:   { label: "🍜 Buy me ramen",        zh: "🍜 请我吃泡面",      cls: "",    ex: "https://your-tip-link.com" },
+  coffee:  { label: "☕ Send emergency coffee", zh: "☕ 来杯救命咖啡",    cls: "alt", ex: "https://buymeacoffee.com/you" },
+  paypal:  { label: "💸 PayPal me",            zh: "💸 用 PayPal 打赏",  cls: "alt", ex: "https://paypal.me/you" },
+  kofi:    { label: "❤️ Ko-fi",                zh: "❤️ Ko-fi",           cls: "alt", ex: "https://ko-fi.com/you" },
+  bmc:     { label: "☕ Buy Me a Coffee",       zh: "☕ Buy Me a Coffee", cls: "alt", ex: "https://buymeacoffee.com/you" },
+  stripe:  { label: "💳 Card / Stripe",        zh: "💳 刷卡 / Stripe",   cls: "alt", ex: "https://buy.stripe.com/xxxxxx" },
+  crypto:  { label: "🪙 Crypto wallet",         zh: "🪙 加密钱包",        cls: "alt", ex: "0x… or your wallet address" },
+  wise:    { label: "🌍 Wise",                 zh: "🌍 Wise",            cls: "alt", ex: "https://wise.com/pay/me/you" },
+  custom:  { label: "🔗 Support link",          zh: "🔗 打赏链接",        cls: "alt", ex: "https://your-link.com" },
+};
+
+/* localize a status to the current language (zh overrides label/tagline/story/risk) */
+function locStatus(st) {
+  if (!st) return st;
+  const zh = (typeof window !== "undefined" && window.I18N && window.I18N.lang === "zh" && st.zh) ? st.zh : null;
+  return zh ? { ...st, ...zh } : st;
+}
+/* localized payment-kind label */
+function payLabel(kind) {
+  const k = PAYMENT_KINDS[kind] || PAYMENT_KINDS.custom;
+  return (typeof window !== "undefined" && window.I18N && window.I18N.lang === "zh" && k.zh) ? k.zh : k.label;
+}
+const BANDS_ZH = {
+  "Financially dramatic": "财务戏精", "Critically broke": "重度破产",
+  "Aggressively broke": "激进破产", "Casually broke": "轻度破产", "Suspiciously fine": "可疑地还行",
 };
 
 /* ---------------- broke score ---------------- */
@@ -105,7 +129,8 @@ function brokeScore(data) {
   else if (s >= 48) band = "Casually broke";
   else band = "Suspiciously fine";
 
-  return { score: s, band, risk: st.risk };
+  const zh = (typeof window !== "undefined" && window.I18N && window.I18N.lang === "zh");
+  return { score: s, band: zh ? (BANDS_ZH[band] || band) : band, risk: locStatus(st).risk };
 }
 
 function pctOf(data) {
@@ -171,7 +196,7 @@ function drawShareImage(canvas, data) {
   const W = 1200, H = 630;
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
-  const st = STATUSES[data.status] || STATUSES.ramen;
+  const st = locStatus(STATUSES[data.status] || STATUSES.ramen);
   const bs = brokeScore(data);
   const pct = pctOf(data);
 
@@ -278,4 +303,4 @@ function mixHex(a, b, t) {
 }
 
 /* expose */
-window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, brokeScore, pctOf, safeUrl, drawShareImage, shareText, shareIntents, renderShareRow };
+window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, brokeScore, pctOf, safeUrl, drawShareImage, shareText, shareIntents, renderShareRow };
