@@ -117,7 +117,14 @@ Now I'm surviving on instant noodles. Send help (or seasoning).</textarea>
       <a class="btn btn-ghost btn-block" id="openPage" target="_blank" rel="noopener" data-i18n="modal.open">Open my page ↗</a>
       <button class="btn btn-ghost btn-block" id="downloadBtn" data-i18n="modal.download">⬇ Download image</button>
     </div>
-    <p class="edit-hint">🔒 <a id="editLink" data-i18n="modal.editlink">Private link to edit this page later</a> <span data-i18n="modal.edithint_tail">— anyone with it can edit, keep it to yourself.</span></p>
+    <div class="edit-save">
+      <div class="edit-save-head">🔒 <strong data-i18n="modal.edit_title">Save your private edit link</strong></div>
+      <p class="edit-save-warn" data-i18n="modal.edit_warn">This is the only way to edit this page later — there are no accounts. Clearing your browser data loses access. Anyone with the link can edit, so keep it private.</p>
+      <div class="result-url">
+        <input type="text" id="editUrl" readonly aria-label="Your private edit link" />
+        <button class="btn btn-ghost" id="copyEdit" data-i18n="modal.edit_copy">Copy edit link</button>
+      </div>
+    </div>
   </div>
 </div>
 

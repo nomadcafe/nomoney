@@ -311,7 +311,7 @@ async function publish() {
   // remember edit rights + switch into edit mode so further saves update the same page
   if (result.editToken) {
     try { localStorage.setItem("nm:edit:" + result.slug, result.editToken); } catch (e) {}
-    $("#editLink").href = location.origin + base + "create.html?edit=" + result.slug + "&t=" + encodeURIComponent(result.editToken);
+    $("#editUrl").value = location.origin + base + "create.html?edit=" + result.slug + "&t=" + encodeURIComponent(result.editToken);
     enterEditMode(result.slug, result.editToken);
   }
 
@@ -364,6 +364,10 @@ $("#modal").onclick = e => { if (e.target === $("#modal")) $("#modal").classList
 $("#copyResult").onclick = async () => {
   try { await navigator.clipboard.writeText($("#resultUrl").value); toast(t("toast.link_copied")); }
   catch { $("#resultUrl").select(); toast(t("toast.copy_manual")); }
+};
+$("#copyEdit").onclick = async () => {
+  try { await navigator.clipboard.writeText($("#editUrl").value); toast(t("toast.edit_copied")); }
+  catch { $("#editUrl").select(); toast(t("toast.copy_manual")); }
 };
 $("#downloadBtn").onclick = () => {
   const a = document.createElement("a");

@@ -450,6 +450,10 @@ a { color: inherit; text-decoration: none; }
 .result-url input { flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; font-family: var(--mono); font-size: 14px; color: var(--ink); }
 .result-url .btn { flex: 0 0 auto; }
 .modal-live .share-row { justify-content: center; }
+.edit-save { text-align: left; margin-top: 18px; padding: 16px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; }
+.edit-save-head { font-size: 15px; margin-bottom: 6px; }
+.edit-save-warn { font-size: 12.5px; line-height: 1.5; color: var(--ink-dim); margin-bottom: 12px; }
+.edit-save .result-url { margin-bottom: 0; }
 
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--green); color: #04130a; font-weight: 600; font-size: 14px; padding: 12px 20px; border-radius: 12px; opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 200; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

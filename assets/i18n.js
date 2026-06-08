@@ -55,6 +55,9 @@ const STR = {
     "modal.copy": "Copy link", "modal.share_label": "Share it — the image does the begging",
     "modal.open": "Open my page ↗", "modal.download": "⬇ Download image",
     "modal.editlink": "Private link to edit this page later", "modal.edithint_tail": "— anyone with it can edit, keep it to yourself.",
+    "modal.edit_title": "Save your private edit link",
+    "modal.edit_warn": "This is the only way to edit this page later — there are no accounts. Clearing your browser data loses access. Anyone with the link can edit, so keep it private.",
+    "modal.edit_copy": "Copy edit link",
     "card.score_of": "/100", "card.survival": "raised of",
     "p.share_btn": "📸 Get share image", "p.copy_btn": "🔗 Copy link",
     "p.remix_strong": "Broke too?", "p.remix_span": "Make your own broke page in 60 seconds. No signup.", "p.remix_btn": "Make mine →",
@@ -73,6 +76,7 @@ const STR = {
     "toast.write_first": "Write something first", "toast.posted": "Posted 🎉",
     "toast.no_links_msg": "Links aren't allowed", "toast.post_fail": "Couldn't post — try again",
     "toast.deleted": "Deleted", "toast.delete_fail": "Couldn't delete",
+    "toast.edit_copied": "Edit link copied — save it somewhere safe 🔒",
   },
   zh: {
     "lang.other": "EN",
@@ -126,6 +130,9 @@ const STR = {
     "modal.copy": "复制链接", "modal.share_label": "发出去——让图替你卖惨",
     "modal.open": "打开我的页面 ↗", "modal.download": "⬇ 下载图片",
     "modal.editlink": "以后编辑此页的私密链接", "modal.edithint_tail": "——有此链接的人都能编辑，请自己保管。",
+    "modal.edit_title": "保存你的私密编辑链接",
+    "modal.edit_warn": "这是以后编辑此页的唯一方式——本站没有账户。清除浏览器数据就会失去编辑权。有此链接的人都能编辑，请自己保管。",
+    "modal.edit_copy": "复制编辑链接",
     "card.score_of": "/100", "card.survival": "已筹",
     "p.share_btn": "📸 生成分享图", "p.copy_btn": "🔗 复制链接",
     "p.remix_strong": "你也破产了？", "p.remix_span": "60 秒做你自己的破产页。免注册。", "p.remix_btn": "做我的 →",
@@ -144,6 +151,7 @@ const STR = {
     "toast.write_first": "先写点东西", "toast.posted": "已发布 🎉",
     "toast.no_links_msg": "不能带链接", "toast.post_fail": "发布失败——重试",
     "toast.deleted": "已删除", "toast.delete_fail": "删除失败",
+    "toast.edit_copied": "编辑链接已复制——请妥善保存 🔒",
   },
 };
 
