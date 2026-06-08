@@ -77,9 +77,54 @@ function renderDemos() {
   });
 }
 
-function renderAll() { renderHero(); renderDemos(); }
+// public "wall of broke" — hand-curated real pages (GET /api/wall). Hidden until populated.
+let wallCards = null;   // cached after first fetch so langchange re-renders without refetching
+function renderWall() {
+  const section = document.getElementById("wall");
+  const grid = document.getElementById("wallGrid");
+  if (!wallCards || !wallCards.length) { section.style.display = "none"; return; }
+  section.style.display = "";
+  grid.innerHTML = "";
+  wallCards.forEach(c => {
+    const sp = NM.STATUSES[c.status] ? c.status : "ramen";
+    const st = NM.locStatus(NM.STATUSES[sp]);
+    const bs = NM.brokeScore({ status: sp, goal: c.goal, raised: c.raised });
+    const pct = NM.pctOf({ goal: c.goal, raised: c.raised });
+    const cta = isZh()
+      ? (c.link && c.link.kind ? NM.payLabel(c.link.kind) : "🍜 请我吃泡面")
+      : (c.link && c.link.label ? c.link.label : (c.link ? (NM.PAYMENT_KINDS[c.link.kind] || NM.PAYMENT_KINDS.custom).label : "🍜 Buy me ramen"));
+    const a = document.createElement("a");
+    a.className = "page-card demo-card theme-" + (st.theme || "clean");
+    a.href = "/" + c.slug;
+    setAccent(a, st.accent);
+    a.innerHTML = `
+      <div class="avatar">${c.emoji || st.emoji}</div>
+      <div class="status-pill"><span class="dot"></span>${st.label}</div>
+      <div class="page-name">${esc(c.name)}</div>
+      <div class="page-handle">no.money/${esc(c.handle)}</div>
+      <div class="page-story">${st.tagline || st.story.split("\n")[0]}</div>
+      <div class="goal-wrap">
+        <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${isZh() ? `${t("card.lessbroke")} ${pct}%` : `${pct}% ${t("card.lessbroke")}`}</span></div>
+        <div class="goal-bar"><i style="width:${pct}%"></i></div>
+      </div>
+      <div class="demo-cta">${esc(cta)}</div>
+      <div class="broke-score">
+        <div class="bs-top"><span class="bs-label">${t("card.broke_score")}</span><span class="bs-num">${bs.score}<span>/100</span></span></div>
+        <div class="bs-meter"><i style="width:${bs.score}%"></i></div>
+      </div>`;
+    grid.appendChild(a);
+  });
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch])); }
+async function loadWall() {
+  try { const r = await fetch("/api/wall"); if (r.ok) wallCards = (await r.json()).cards || []; } catch (e) { wallCards = []; }
+  renderWall();
+}
+
+function renderAll() { renderHero(); renderDemos(); renderWall(); }
 
 window.I18N.apply();                       // translate static [data-i18n] text
 renderAll();                               // render dynamic cards in the current language
+loadWall();                                // fetch + reveal the curated wall (no-op on static/local)
 document.getElementById("langToggle").onclick = () => window.I18N.setLang(isZh() ? "en" : "zh");
 window.addEventListener("langchange", renderAll);  // setLang already re-applied static text

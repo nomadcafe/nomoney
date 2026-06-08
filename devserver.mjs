@@ -98,6 +98,30 @@ createServer(async (req, res) => {
     return send(res, 200, JSON.stringify({ data: JSON.parse(raw).d || null }), { "content-type": "application/json" });
   }
 
+  if (path === "/api/wall") {
+    const readList = () => { try { const a = JSON.parse(KV.get("wall:featured") || "[]"); return Array.isArray(a) ? a : []; } catch { return []; } };
+    if (req.method === "GET") {
+      const cards = [];
+      for (const slug of readList()) {
+        const raw = KV.get(slug); if (!raw) continue;
+        let d; try { d = JSON.parse(raw).d; } catch { d = null; } if (!d) continue;
+        const first = Array.isArray(d.links) && d.links[0] ? d.links[0] : null;
+        cards.push({ slug, name: d.name || "Someone broke", handle: d.handle || slug, status: d.status || "ramen", emoji: typeof d.emoji === "string" ? d.emoji : "", goal: Number(d.goal) || 0, raised: Number(d.raised) || 0, link: first ? { kind: first.kind || "custom", label: first.label || "" } : null });
+      }
+      return send(res, 200, JSON.stringify({ cards }), { "content-type": "application/json" });
+    }
+    if (req.method === "POST") {
+      let body = {}; try { body = JSON.parse(await new Promise(r => { let s = ""; req.on("data", c => s += c); req.on("end", () => r(s || "{}")); })); } catch {}
+      if (body.token !== "dev") return send(res, 403, '{"error":"forbidden (dev token: dev)"}', { "content-type": "application/json" });
+      let list = readList();
+      if (Array.isArray(body.set)) list = body.set.filter(s => SLUG_RE.test(s));
+      else if (body.add && SLUG_RE.test(body.add)) list = [body.add, ...list.filter(x => x !== body.add)];
+      else if (body.remove) list = list.filter(x => x !== body.remove);
+      KV.set("wall:featured", JSON.stringify(list.slice(0, 24)));
+      return send(res, 200, JSON.stringify({ featured: list }), { "content-type": "application/json" });
+    }
+  }
+
   if ((m = path.match(/^\/og\/([a-z0-9-]{2,40})$/)) && req.method === "GET") {
     const png = KV.get("img:" + m[1]); if (!png) return send(res, 404, "not found");
     return send(res, 200, png, { "content-type": "image/png" });
