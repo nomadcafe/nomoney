@@ -98,7 +98,7 @@ function render() {
 
   document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
   document.getElementById("card").innerHTML = `
-    <div class="avatar">${st.emoji}</div>
+    <div class="avatar">${esc(data.emoji || st.emoji)}</div>
     <div class="status-pill"><span class="dot"></span>${st.label}</div>
     <div class="page-name">${esc(data.name || "Someone broke")}</div>
     <div class="page-handle">no.money/${esc(data.handle || "you")}</div>

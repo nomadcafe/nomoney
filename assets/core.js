@@ -187,7 +187,7 @@ function drawShareImage(canvas, data) {
   ctx.globalAlpha = 0.06;
   ctx.font = "360px -apple-system, Segoe UI, sans-serif";
   ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
-  ctx.fillText(st.emoji, W - 20, H + 70);
+  ctx.fillText(data.emoji || st.emoji, W - 20, H + 70);
   ctx.restore();
   ctx.textAlign = "left";
 

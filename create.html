@@ -35,6 +35,7 @@
   <div class="create-head">
     <h1>Build your broke page</h1>
     <p>No signup — it lives in a shareable link. About 60 seconds.</p>
+    <button class="btn btn-ghost" id="surprise" style="margin-top:14px">🎲 Surprise me</button>
   </div>
   <div class="create-layout">
 
@@ -43,6 +44,11 @@
       <div class="field">
         <label for="f-name">Your name</label>
         <input type="text" id="f-name" placeholder="e.g. Mira" maxlength="40" value="Mira" />
+      </div>
+
+      <div class="field">
+        <label>Avatar <span style="color:var(--ink-faint)">(optional — defaults to your broke status)</span></label>
+        <div class="emoji-pick" id="emojiPick"></div>
       </div>
 
       <div class="field">
@@ -121,6 +127,23 @@ My portfolio is strong. My fridge is empty.</textarea>
 const $ = s => document.querySelector(s);
 let status = "domain";
 let storyTouched = false; // becomes true once the user types their own story — then we never auto-overwrite it
+let emoji = "";           // custom avatar emoji; "" = use the broke status' default
+
+const EMOJIS = ["", "😭", "🥲", "😅", "💀", "🤡", "🐀", "☕", "🍜", "💸", "📉", "🚀", "🎓"];
+function buildEmoji() {
+  const wrap = $("#emojiPick");
+  wrap.innerHTML = "";
+  EMOJIS.forEach(e => {
+    const b = document.createElement("button");
+    b.className = "emoji-btn" + (e === emoji ? " on" : "");
+    b.textContent = e === "" ? "Auto" : e;
+    if (e === "") b.style.fontSize = "12px";
+    b.title = e === "" ? "Use your status emoji" : e;
+    b.setAttribute("aria-pressed", e === emoji);
+    b.onclick = () => { emoji = e; buildEmoji(); render(); };
+    wrap.appendChild(b);
+  });
+}
 
 const AI_LINES = {
   domain: [
@@ -162,10 +185,12 @@ function buildChips() {
     const b = document.createElement("button");
     b.className = "chip" + (k === status ? " on" : "");
     b.textContent = `${st.emoji} ${st.label}`;
+    b.setAttribute("aria-pressed", k === status);
     b.onclick = () => {
       status = k;
-      document.querySelectorAll(".chip").forEach(x => x.classList.remove("on"));
+      document.querySelectorAll(".chip").forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); });
       b.classList.add("on");
+      b.setAttribute("aria-pressed", "true");
       // only swap in this status' default story if the user hasn't written their own
       if (!storyTouched) $("#f-story").value = NM.STATUSES[k].story;
       render();
@@ -186,7 +211,7 @@ function buildLinks() {
     const opts = Object.entries(NM.PAYMENT_KINDS).map(([k, v]) =>
       `<option value="${k}" ${k === l.kind ? "selected" : ""}>${v.label.replace(/^[^ ]+ /, "")}</option>`).join("");
     row.innerHTML =
-      `<div class="link-top"><select>${opts}</select><button class="link-del" title="remove">×</button></div>` +
+      `<div class="link-top"><select>${opts}</select><button class="link-del" title="remove" aria-label="Remove link">×</button></div>` +
       `<input class="link-label" type="text" maxlength="40" placeholder="Button text — e.g. ${esc(defLabel)}" value="${esc(l.label || "")}" />` +
       `<input class="link-url" type="text" placeholder="${esc(kind.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />`;
     row.querySelector("select").onchange = e => { links[i].kind = e.target.value; buildLinks(); render(); };
@@ -205,6 +230,7 @@ function gather() {
     name: $("#f-name").value.trim() || "Someone broke",
     handle,
     status,
+    ...(emoji ? { emoji } : {}),
     story: $("#f-story").value.trim(),
     goal: Number($("#f-goal").value) || 0,
     raised: Number($("#f-raised").value) || 0,
@@ -241,7 +267,7 @@ function render() {
 
   $("#preview").className = "page-card theme-" + (st.theme || "clean");
   $("#preview").innerHTML = `
-    <div class="avatar">${st.emoji}</div>
+    <div class="avatar">${esc(data.emoji || st.emoji)}</div>
     <div class="status-pill"><span class="dot"></span>${st.label}</div>
     <div class="page-name">${esc(data.name)}</div>
     <div class="page-handle">no.money/${esc(data.handle)}</div>
@@ -273,6 +299,18 @@ $("#f-story").addEventListener("input", () => { storyTouched = true; render(); }
 ["#f-name", "#f-handle", "#f-goal", "#f-raised"].forEach(s => {
   $(s).addEventListener("input", render);
 });
+
+// 🎲 roll a fresh broke persona — lowers the blank-page barrier
+const PERSONA_EMOJIS = ["", "😭", "🥲", "💀", "🤡", "🐀", "💸", "📉"];
+$("#surprise").onclick = () => {
+  status = NM.STATUS_ORDER[Math.floor(Math.random() * NM.STATUS_ORDER.length)];
+  const arr = AI_LINES[status] || AI_LINES.domain;
+  $("#f-story").value = arr[Math.floor(Math.random() * arr.length)];
+  storyTouched = true;
+  emoji = PERSONA_EMOJIS[Math.floor(Math.random() * PERSONA_EMOJIS.length)];
+  buildChips(); buildEmoji(); render();
+  toast("🎲 Rolled a fresh broke persona");
+};
 
 // turn "paypal.me/you" into "https://paypal.me/you", but leave real schemes (http:, bitcoin:) and raw crypto addresses alone
 function normUrl(u) {
@@ -340,7 +378,7 @@ $("#downloadBtn").onclick = () => {
   if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) { status = s; $("#f-story").value = NM.STATUSES[s].story; }
 })();
 
-buildChips(); buildLinks(); render();
+buildChips(); buildEmoji(); buildLinks(); render();
 </script>
 </body>
 </html>
