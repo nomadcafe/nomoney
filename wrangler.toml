@@ -6,4 +6,4 @@ pages_build_output_dir = "."
 # Create the namespace, then paste its id below (see DEPLOY.md).
 [[kv_namespaces]]
 binding = "PAGES"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "3c15cd86ba634f76aa3e0f685be49d77"
