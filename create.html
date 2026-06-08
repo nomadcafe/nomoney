@@ -24,76 +24,77 @@
   <div class="wrap">
     <a class="logo" href="index.html">no<b>.</b>money</a>
     <div class="nav-links">
-      <a href="index.html#demos">Examples</a>
-      <a class="btn btn-primary" id="publishTop">Get my page →</a>
+      <a href="index.html#demos" data-i18n="nav.examples">Examples</a>
+      <button class="lang-toggle" id="langToggle" data-i18n="lang.other">中文</button>
+      <a class="btn btn-primary" id="publishTop" data-i18n="create.publishtop">Get my page →</a>
     </div>
   </div>
 </nav>
 
 <div class="wrap">
   <div class="create-head">
-    <h1>Build your broke page</h1>
-    <p>No signup — it lives in a shareable link. About 60 seconds.</p>
-    <button class="btn btn-ghost" id="surprise" style="margin-top:14px">🎲 Surprise me</button>
+    <h1 data-i18n="create.head_h1">Build your broke page</h1>
+    <p data-i18n="create.head_p">No signup — it lives in a shareable link. About 60 seconds.</p>
+    <button class="btn btn-ghost" id="surprise" style="margin-top:14px" data-i18n="create.surprise">🎲 Surprise me</button>
   </div>
   <div class="create-layout">
 
     <!-- form -->
     <div class="form-col">
       <div class="field">
-        <label for="f-name">Your name</label>
+        <label for="f-name" data-i18n="create.name">Your name</label>
         <input type="text" id="f-name" placeholder="e.g. Mira" maxlength="40" value="Mira" />
       </div>
 
       <div class="field">
-        <label>Avatar <span style="color:var(--ink-faint)">(optional — defaults to your broke status)</span></label>
+        <label><span data-i18n="create.avatar">Avatar</span> <span style="color:var(--ink-faint)" data-i18n="create.avatar_hint">(optional — defaults to your broke status)</span></label>
         <div class="emoji-pick" id="emojiPick"></div>
       </div>
 
       <div class="field">
-        <label for="f-handle">Your handle <span style="color:var(--ink-faint);font-family:var(--mono)">no.money/<span id="handlePrev">mira</span></span></label>
+        <label for="f-handle"><span data-i18n="create.handle">Your handle</span> <span style="color:var(--ink-faint);font-family:var(--mono)">no.money/<span id="handlePrev">mira</span></span></label>
         <input type="text" id="f-handle" placeholder="your-handle" maxlength="30" value="mira" />
-        <div class="hint" id="editNote" style="display:none">Editing — the URL stays the same.</div>
+        <div class="hint" id="editNote" style="display:none" data-i18n="create.editnote">Editing — the URL stays the same.</div>
       </div>
 
       <div class="field">
-        <label>What kind of broke are you?</label>
+        <label data-i18n="create.status_q">What kind of broke are you?</label>
         <div class="status-chips" id="chips"></div>
       </div>
 
       <div class="field">
-        <label for="f-story">Your sob story</label>
-        <textarea id="f-story" maxlength="240" placeholder="Make it funny. Self-pity sells.">I came here to build wealth.
+        <label for="f-story" data-i18n="create.story">Your sob story</label>
+        <textarea id="f-story" maxlength="240" data-i18n-ph="create.story_ph" placeholder="Make it funny. Self-pity sells.">I came here to build wealth.
 Unfortunately, I discovered premium domains.
 My portfolio is strong. My fridge is empty.</textarea>
-        <button class="ai-btn" id="aiBtn" style="margin-top:10px">✨ Rewrite it funnier (AI)</button>
+        <button class="ai-btn" id="aiBtn" style="margin-top:10px" data-i18n="create.ai_btn">✨ Rewrite it funnier (AI)</button>
         <div class="hint" style="display:flex;justify-content:space-between;gap:10px">
-          <span>Rewrites your story with AI — falls back to curated punch-ups if AI is busy.</span>
+          <span data-i18n="create.ai_hint">Rewrites your story with AI — falls back to curated punch-ups if AI is busy.</span>
           <span class="counter" id="storyCount">0/240</span>
         </div>
       </div>
 
       <div class="field">
-        <label>Goal &amp; progress</label>
+        <label data-i18n="create.goal">Goal &amp; progress</label>
         <div style="display:flex;gap:10px">
-          <div style="flex:1"><div class="money-input"><span>$</span><input type="number" id="f-goal" placeholder="500" value="500" min="0" /></div><div class="hint">survival goal</div></div>
-          <div style="flex:1"><div class="money-input"><span>$</span><input type="number" id="f-raised" placeholder="210" value="210" min="0" /></div><div class="hint">raised so far</div></div>
+          <div style="flex:1"><div class="money-input"><span>$</span><input type="number" id="f-goal" placeholder="500" value="500" min="0" /></div><div class="hint" data-i18n="create.goal_hint">survival goal</div></div>
+          <div style="flex:1"><div class="money-input"><span>$</span><input type="number" id="f-raised" placeholder="210" value="210" min="0" /></div><div class="hint" data-i18n="create.raised_hint">raised so far</div></div>
         </div>
       </div>
 
       <div class="field">
-        <label>Support links <span style="color:var(--ink-faint)">(money goes straight to you)</span></label>
+        <label><span data-i18n="create.links">Support links</span> <span style="color:var(--ink-faint)" data-i18n="create.links_note">(money goes straight to you)</span></label>
         <div id="links"></div>
-        <button class="add-link" id="addLink">+ Add support link</button>
+        <button class="add-link" id="addLink" data-i18n="create.add_link">+ Add support link</button>
       </div>
 
-      <button class="btn btn-primary btn-lg btn-block" id="publish">Get my broke page →</button>
-      <p class="hint" style="text-align:center">No signup. Your page lives in a shareable link.</p>
+      <button class="btn btn-primary btn-lg btn-block" id="publish" data-i18n="create.publish">Get my broke page →</button>
+      <p class="hint" style="text-align:center" data-i18n="create.publish_note">No signup. Your page lives in a shareable link.</p>
     </div>
 
     <!-- preview -->
     <div class="preview-col">
-      <div class="preview-label">Live preview</div>
+      <div class="preview-label" data-i18n="create.preview_label">Live preview</div>
       <div class="page-card" id="preview"></div>
     </div>
 
@@ -104,20 +105,20 @@ My portfolio is strong. My fridge is empty.</textarea>
 <div class="modal-bg" id="modal">
   <div class="modal modal-live">
     <button class="modal-x" id="closeModal" aria-label="Close">×</button>
-    <div class="live-badge">💸 You're officially broke</div>
-    <h3>Your page is live 🎉</h3>
+    <div class="live-badge" data-i18n="modal.badge">💸 You're officially broke</div>
+    <h3 data-i18n="modal.live_h3">Your page is live 🎉</h3>
     <div class="result-url">
       <input type="text" id="resultUrl" readonly aria-label="Your page link" />
-      <button class="btn btn-primary" id="copyResult">Copy link</button>
+      <button class="btn btn-primary" id="copyResult" data-i18n="modal.copy">Copy link</button>
     </div>
     <canvas id="shareCanvas"></canvas>
-    <div class="share-label">Share it — the image does the begging</div>
+    <div class="share-label" data-i18n="modal.share_label">Share it — the image does the begging</div>
     <div class="share-row" id="shareRow"></div>
     <div class="modal-actions">
-      <a class="btn btn-ghost btn-block" id="openPage" target="_blank" rel="noopener">Open my page ↗</a>
-      <button class="btn btn-ghost btn-block" id="downloadBtn">⬇ Download image</button>
+      <a class="btn btn-ghost btn-block" id="openPage" target="_blank" rel="noopener" data-i18n="modal.open">Open my page ↗</a>
+      <button class="btn btn-ghost btn-block" id="downloadBtn" data-i18n="modal.download">⬇ Download image</button>
     </div>
-    <p class="edit-hint">🔒 <a id="editLink">Private link to edit this page later</a> — anyone with it can edit, keep it to yourself.</p>
+    <p class="edit-hint">🔒 <a id="editLink" data-i18n="modal.editlink">Private link to edit this page later</a> <span data-i18n="modal.edithint_tail">— anyone with it can edit, keep it to yourself.</span></p>
   </div>
 </div>
 

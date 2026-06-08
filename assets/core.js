@@ -157,10 +157,12 @@ function safeUrl(u) {
 
 /* ---------------- sharing ---------------- */
 /* a funny, ready-to-post caption built from the page data */
+function isZhLang() { return !!(window.I18N && window.I18N.lang === "zh"); }
 function shareText(data) {
-  const st = STATUSES[data.status] || STATUSES.ramen;
+  const st = locStatus(STATUSES[data.status] || STATUSES.ramen);
   const bs = brokeScore(data);
   const line = (data.story || "").split("\n")[0].trim() || st.tagline || "";
+  if (isZhLang()) return `${data.name || "某人"} 破产 ${bs.score}% 💸${line ? " — " + line : ""}`;
   return `${data.name || "Someone"} is ${bs.score}% broke 💸${line ? " — " + line : ""}`;
 }
 
@@ -200,6 +202,7 @@ function drawShareImage(canvas, data) {
   const bs = brokeScore(data);
   const pct = pctOf(data);
 
+  const zh = isZhLang();
   const deep = mixHex(st.accent, "#18191c", 0.42); // accent darkened so it's legible as text on light
 
   // bg — warm light, matching the page cards
@@ -229,7 +232,7 @@ function drawShareImage(canvas, data) {
 
   // broke score chip (top-right)
   ctx.font = "700 24px ui-monospace, Menlo, monospace";
-  const scoreTxt = `BROKE SCORE  ${bs.score}/100`;
+  const scoreTxt = zh ? `破产分  ${bs.score}/100` : `BROKE SCORE  ${bs.score}/100`;
   const sw = ctx.measureText(scoreTxt).width + 52;
   roundRect(ctx, W - 72 - sw, 72, sw, 50, 25); ctx.fillStyle = "#ffffff"; ctx.fill();
   ctx.strokeStyle = "#e7e0d3"; ctx.lineWidth = 1; ctx.stroke();
@@ -238,12 +241,12 @@ function drawShareImage(canvas, data) {
   // headline: "X is 87% broke."
   ctx.fillStyle = "#18191c";
   ctx.font = "800 90px -apple-system, Segoe UI, Roboto, sans-serif";
-  ctx.fillText(`${data.name || "Someone"} is`, 72, 232);
+  ctx.fillText(zh ? `${data.name || "某人"}` : `${data.name || "Someone"} is`, 72, 232);
   ctx.fillStyle = deep;
-  ctx.fillText(`${bs.score}% broke.`, 72, 330);
+  ctx.fillText(zh ? `破产 ${bs.score}%` : `${bs.score}% broke.`, 72, 330);
 
   // the punchline — first line of their story (or status tagline)
-  const quote = (data.story || "").split("\n")[0].trim() || st.tagline || "Help me become slightly less broke.";
+  const quote = (data.story || "").split("\n")[0].trim() || st.tagline || (zh ? "帮我变得没那么穷一点。" : "Help me become slightly less broke.");
   ctx.fillStyle = "#565961";
   ctx.font = "italic 400 34px -apple-system, Segoe UI, Roboto, sans-serif";
   const qLines = wrapText(ctx, `“${quote}”`, W - 144).slice(0, 2);
@@ -255,7 +258,7 @@ function drawShareImage(canvas, data) {
   roundRect(ctx, 72, barY, barW, 14, 7); ctx.fillStyle = "#e9e3d8"; ctx.fill();
   roundRect(ctx, 72, barY, Math.max(14, barW * pct / 100), 14, 7); ctx.fillStyle = st.accent; ctx.fill();
   ctx.fillStyle = "#6f6a61"; ctx.font = "500 22px ui-monospace, Menlo, monospace";
-  ctx.fillText(`${pct}% to $${(Number(data.goal) || 0).toLocaleString()} survival goal`, 72, barY + 44);
+  ctx.fillText(zh ? `已达成 ${pct}% · 生存目标 $${(Number(data.goal) || 0).toLocaleString()}` : `${pct}% to $${(Number(data.goal) || 0).toLocaleString()} survival goal`, 72, barY + 44);
   ctx.textAlign = "right";
   ctx.fillStyle = deep; ctx.fillText(bs.band, W - 72, barY + 44);
   ctx.textAlign = "left";

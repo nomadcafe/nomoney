@@ -1,4 +1,6 @@
 import "../assets/core.js"; // sets window.NM + loads the stylesheet
+const t = (k) => window.I18N.t(k);
+const isZh = () => window.I18N.lang === "zh";
 const params = new URLSearchParams(location.search);
 let data = null;
 if (window.__PAGE__ && typeof window.__PAGE__ === "object") {
@@ -10,7 +12,6 @@ if (!data) { location.href = "index.html"; }
 
 // fill defaults from status preset
 const st = (Object.prototype.hasOwnProperty.call(NM.STATUSES, data.status) && NM.STATUSES[data.status]) || NM.STATUSES.ramen;
-data.story = data.story || st.story;
 data.links = data.links || defaultLinks(data.status);
 data.msgs = data.msgs || st.msgs;
 
@@ -22,6 +23,7 @@ function defaultLinks(status) {
 }
 
 function render() {
+  const ls = NM.locStatus(st);
   const bs = NM.brokeScore(data);
   const pct = NM.pctOf(data);
   document.documentElement.style.setProperty("--accent", st.accent);
@@ -29,38 +31,45 @@ function render() {
   document.documentElement.style.setProperty("--accent-line", hexA(st.accent, 0.45));
   document.documentElement.style.setProperty("--accent-glow", hexA(st.accent, 0.18));
 
-  document.title = `${data.name} is ${bs.score}% broke · No Money`;
+  const story = data.story || ls.story;
+  document.title = isZh()
+    ? `${data.name} 破产 ${bs.score}% · No Money`
+    : `${data.name} is ${bs.score}% broke · No Money`;
 
   const links = data.links.map(l => {
     const k = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
-    const label = l.label || k.label;
+    const label = l.label || NM.payLabel(l.kind);
     return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener">${esc(label)}</a>`;
   }).join("");
+
+  const raisedLine = isZh()
+    ? `${t("card.survival")} $${num(data.raised)} / 生存目标 $${num(data.goal)}`
+    : `$${num(data.raised)} raised of $${num(data.goal)} survival fund`;
 
   document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
   document.getElementById("card").innerHTML = `
     <div class="avatar">${esc(data.emoji || st.emoji)}</div>
-    <div class="status-pill"><span class="dot"></span>${st.label}</div>
-    <div class="page-name">${esc(data.name || "Someone broke")}</div>
+    <div class="status-pill"><span class="dot"></span>${esc(ls.label)}</div>
+    <div class="page-name">${esc(data.name || (isZh() ? "某破产人士" : "Someone broke"))}</div>
     <div class="page-handle">no.money/${esc(data.handle || "you")}</div>
-    <div class="page-story">${esc(data.story)}</div>
+    <div class="page-story">${esc(story)}</div>
 
     <div class="goal-wrap">
-      <div class="goal-row"><span class="label">Goal</span><span class="pct">${pct}% less broke</span></div>
+      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${pct}% ${t("card.lessbroke")}</span></div>
       <div class="goal-bar"><i style="width:${pct}%"></i></div>
-      <div class="goal-sub">$${num(data.raised)} raised of $${num(data.goal)} survival fund</div>
+      <div class="goal-sub">${raisedLine}</div>
     </div>
 
     <div class="support-btns">${links}</div>
 
     <div class="broke-score">
       <div class="bs-top">
-        <span class="bs-label">Broke Score</span>
-        <span class="bs-num">${bs.score}<span>/100</span></span>
+        <span class="bs-label">${t("card.broke_score")}</span>
+        <span class="bs-num">${bs.score}<span>${t("card.score_of")}</span></span>
       </div>
       <div class="bs-meter"><i style="width:${bs.score}%"></i></div>
-      <div class="bs-row"><span class="k">Status</span><span class="v">${esc(bs.band)}</span></div>
-      <div class="bs-row"><span class="k">Risk level</span><span class="v">${esc(bs.risk)}</span></div>
+      <div class="bs-row"><span class="k">${t("card.status")}</span><span class="v">${esc(bs.band)}</span></div>
+      <div class="bs-row"><span class="k">${t("card.risk")}</span><span class="v">${esc(bs.risk)}</span></div>
     </div>
   `;
 }
@@ -69,8 +78,9 @@ function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<"
 function num(n) { return (Number(n) || 0).toLocaleString(); }
 function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
 
-function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); }
+function toast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); }
 
+window.I18N.apply();
 render();
 
 /* ---------- support messages (wall of pity) ---------- */
@@ -93,18 +103,18 @@ function renderMsgSection() {
   const el = document.getElementById("msgSection");
   const form = isVanity ? `
     <div class="msg-form">
-      <input id="mName" maxlength="24" placeholder="Your name (optional)" />
-      <textarea id="mText" maxlength="140" placeholder="Cheer them on — or roast them. Keep it funny."></textarea>
-      <button class="btn btn-primary btn-block" id="mSend">Post message</button>
+      <input id="mName" maxlength="24" placeholder="${esc(t("msg.name_ph"))}" />
+      <textarea id="mText" maxlength="140" placeholder="${esc(t("msg.text_ph"))}"></textarea>
+      <button class="btn btn-primary btn-block" id="mSend">${esc(t("msg.post"))}</button>
     </div>` : "";
-  el.innerHTML = `<h4 class="msg-title">Support messages${messages.length ? ` (${messages.length})` : ""}</h4>${form}<div class="msg-wall" id="msgWall"></div>`;
+  el.innerHTML = `<h4 class="msg-title">${esc(t("msg.title"))}${messages.length ? ` (${messages.length})` : ""}</h4>${form}<div class="msg-wall" id="msgWall"></div>`;
   if (isVanity) document.getElementById("mSend").onclick = postMsg;
   renderWall();
 }
 
 function renderWall() {
   const w = document.getElementById("msgWall");
-  if (!messages.length) { w.innerHTML = `<p class="msg-empty">No messages yet — be the first to pity them (financially).</p>`; return; }
+  if (!messages.length) { w.innerHTML = `<p class="msg-empty">${esc(t("msg.empty"))}</p>`; return; }
   w.innerHTML = messages.map(m =>
     `<div class="msg">${esc(m.t)}<div class="who">— ${esc(m.n || "anon")}${(ownerToken && m.id) ? ` <button class="msg-del" data-id="${esc(m.id)}" title="delete">×</button>` : ""}</div></div>`).join("");
   if (ownerToken) w.querySelectorAll(".msg-del").forEach(b => b.onclick = () => deleteMsg(b.dataset.id));
@@ -114,23 +124,23 @@ async function postMsg() {
   const btn = document.getElementById("mSend"), prev = btn.textContent;
   const name = document.getElementById("mName").value;
   const text = document.getElementById("mText").value.trim();
-  if (!text) { toast("Write something first"); return; }
-  btn.disabled = true; btn.textContent = "Posting…";
+  if (!text) { toast(t("toast.write_first")); return; }
+  btn.disabled = true; btn.textContent = t("create.publishing");
   try {
     const r = await fetch("/api/msgs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, name, text }) });
     const j = await r.json().catch(() => ({}));
-    if (r.ok && j.message) { messages.unshift(j.message); document.getElementById("mText").value = ""; renderMsgSection(); toast("Posted 🎉"); }
-    else toast(j.error === "no links allowed" ? "Links aren't allowed" : "Couldn't post");
-  } catch (e) { toast("Couldn't post — try again"); }
+    if (r.ok && j.message) { messages.unshift(j.message); document.getElementById("mText").value = ""; renderMsgSection(); toast(t("toast.posted")); }
+    else toast(j.error === "no links allowed" ? t("toast.no_links_msg") : t("toast.post_fail"));
+  } catch (e) { toast(t("toast.post_fail")); }
   btn.disabled = false; btn.textContent = prev;
 }
 
 async function deleteMsg(id) {
   try {
     const r = await fetch("/api/msgs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, editToken: ownerToken, del: id }) });
-    if (r.ok) { messages = messages.filter(m => m.id !== id); renderMsgSection(); toast("Deleted"); }
-    else toast("Couldn't delete");
-  } catch (e) { toast("Couldn't delete"); }
+    if (r.ok) { messages = messages.filter(m => m.id !== id); renderMsgSection(); toast(t("toast.deleted")); }
+    else toast(t("toast.delete_fail"));
+  } catch (e) { toast(t("toast.delete_fail")); }
 }
 
 initMessages();
@@ -154,6 +164,11 @@ document.getElementById("downloadBtn").onclick = () => {
   a.click();
 };
 document.getElementById("copyBtn").onclick = async () => {
-  try { await navigator.clipboard.writeText(location.href); toast("Link copied 🔗"); }
-  catch { toast("Copy failed — select the URL bar"); }
+  try { await navigator.clipboard.writeText(location.href); toast(t("toast.link_copied")); }
+  catch { toast(t("toast.copy_fail")); }
 };
+
+// language toggle + re-render dynamic content on change
+const langToggle = document.getElementById("langToggle");
+if (langToggle) langToggle.onclick = () => window.I18N.setLang(isZh() ? "en" : "zh");
+window.addEventListener("langchange", () => { render(); renderMsgSection(); window.I18N.apply(); });

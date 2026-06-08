@@ -1,5 +1,7 @@
-import "../assets/core.js"; // sets window.NM + loads the stylesheet
+import "../assets/core.js"; // sets window.NM + window.I18N + loads the stylesheet
 const $ = s => document.querySelector(s);
+const t = (k) => window.I18N.t(k);
+const isZh = () => window.I18N.lang === "zh";
 let status = "domain";
 let storyTouched = false; // becomes true once the user types their own story — then we never auto-overwrite it
 let handleTouched = false; // once the user edits the handle, stop auto-deriving it from the name
@@ -16,9 +18,9 @@ function buildEmoji() {
   EMOJIS.forEach(e => {
     const b = document.createElement("button");
     b.className = "emoji-btn" + (e === emoji ? " on" : "");
-    b.textContent = e === "" ? "Auto" : e;
+    b.textContent = e === "" ? t("emoji.auto") : e;
     if (e === "") b.style.fontSize = "12px";
-    b.title = e === "" ? "Use your status emoji" : e;
+    b.title = e === "" ? t("emoji.auto") : e;
     b.setAttribute("aria-pressed", e === emoji);
     b.onclick = () => { emoji = e; buildEmoji(); render(); };
     wrap.appendChild(b);
@@ -65,7 +67,7 @@ function buildChips() {
     const st = NM.STATUSES[k];
     const b = document.createElement("button");
     b.className = "chip" + (k === status ? " on" : "");
-    b.textContent = `${st.emoji} ${st.label}`;
+    b.textContent = `${st.emoji} ${NM.locStatus(st).label}`;
     b.setAttribute("aria-pressed", k === status);
     b.onclick = () => {
       status = k;
@@ -73,7 +75,7 @@ function buildChips() {
       b.classList.add("on");
       b.setAttribute("aria-pressed", "true");
       // only swap in this status' default story if the user hasn't written their own
-      if (!storyTouched) $("#f-story").value = NM.STATUSES[k].story;
+      if (!storyTouched) $("#f-story").value = NM.locStatus(NM.STATUSES[k]).story;
       render();
     };
     c.appendChild(b);
@@ -86,14 +88,14 @@ function buildLinks() {
   wrap.innerHTML = "";
   links.forEach((l, i) => {
     const kind = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
-    const defLabel = kind.label;
+    const defLabel = NM.payLabel(l.kind);
     const row = document.createElement("div");
     row.className = "link-edit";
     const opts = Object.entries(NM.PAYMENT_KINDS).map(([k, v]) =>
-      `<option value="${k}" ${k === l.kind ? "selected" : ""}>${v.label.replace(/^[^ ]+ /, "")}</option>`).join("");
+      `<option value="${k}" ${k === l.kind ? "selected" : ""}>${(isZh() && v.zh ? v.zh : v.label).replace(/^[^ ]+ /, "")}</option>`).join("");
     row.innerHTML =
       `<div class="link-top"><select>${opts}</select><button class="link-del" title="remove" aria-label="Remove link">×</button></div>` +
-      `<input class="link-label" type="text" maxlength="40" placeholder="Button text — e.g. ${esc(defLabel)}" value="${esc(l.label || "")}" />` +
+      `<input class="link-label" type="text" maxlength="40" placeholder="${esc(t("link.btn_text_ph") + defLabel)}" value="${esc(l.label || "")}" />` +
       `<input class="link-url" type="text" placeholder="${esc(kind.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />`;
     row.querySelector("select").onchange = e => { links[i].kind = e.target.value; buildLinks(); render(); };
     row.querySelector(".link-label").oninput = e => { links[i].label = e.target.value; render(); };
@@ -102,7 +104,7 @@ function buildLinks() {
     wrap.appendChild(row);
   });
 }
-$("#addLink").onclick = () => { if (links.length < 5) { links.push({ kind: "custom", url: "" }); buildLinks(); render(); } else toast("Free plan: 5 links max"); };
+$("#addLink").onclick = () => { if (links.length < 5) { links.push({ kind: "custom", url: "" }); buildLinks(); render(); } else toast(t("toast.links_max")); };
 
 function gather() {
   const handle = ($("#f-handle").value.trim() || "you").toLowerCase()
@@ -131,7 +133,7 @@ function render() {
   const data = gather();
   $("#handlePrev").textContent = data.handle;
   $("#storyCount").textContent = $("#f-story").value.length + "/240";
-  const st = NM.STATUSES[data.status];
+  const st = NM.locStatus(NM.STATUSES[data.status]);
   const bs = NM.brokeScore(data);
   const pct = NM.pctOf(data);
   const root = document.documentElement;
@@ -142,10 +144,13 @@ function render() {
 
   const linkHtml = data.links.map(l => {
     const k = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
-    const label = (l.label && l.label.trim()) || k.label;
+    const label = (l.label && l.label.trim()) || NM.payLabel(l.kind);
     return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}">${esc(label)}</a>`;
   }).join("");
 
+  const pctLine = isZh() ? `${t("card.lessbroke")} ${pct}%` : `${pct}% ${t("card.lessbroke")}`;
+  const raisedLine = isZh() ? `已筹 $${num(data.raised)} / 目标 $${num(data.goal)} 生存基金`
+                            : `$${num(data.raised)} raised of $${num(data.goal)} survival fund`;
   $("#preview").className = "page-card theme-" + (st.theme || "clean");
   $("#preview").innerHTML = `
     <div class="avatar">${esc(data.emoji || st.emoji)}</div>
@@ -154,16 +159,16 @@ function render() {
     <div class="page-handle">no.money/${esc(data.handle)}</div>
     <div class="page-story">${esc(data.story || st.story)}</div>
     <div class="goal-wrap">
-      <div class="goal-row"><span class="label">Goal</span><span class="pct">${pct}% less broke</span></div>
+      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${pctLine}</span></div>
       <div class="goal-bar"><i style="width:${pct}%"></i></div>
-      <div class="goal-sub">$${num(data.raised)} raised of $${num(data.goal)} survival fund</div>
+      <div class="goal-sub">${raisedLine}</div>
     </div>
     <div class="support-btns">${linkHtml}</div>
     <div class="broke-score">
-      <div class="bs-top"><span class="bs-label">Broke Score</span><span class="bs-num">${bs.score}<span>/100</span></span></div>
+      <div class="bs-top"><span class="bs-label">${t("card.broke_score")}</span><span class="bs-num">${bs.score}<span>/100</span></span></div>
       <div class="bs-meter"><i style="width:${bs.score}%"></i></div>
-      <div class="bs-row"><span class="k">Status</span><span class="v">${esc(bs.band)}</span></div>
-      <div class="bs-row"><span class="k">Risk level</span><span class="v">${esc(bs.risk)}</span></div>
+      <div class="bs-row"><span class="k">${t("card.status")}</span><span class="v">${esc(bs.band)}</span></div>
+      <div class="bs-row"><span class="k">${t("card.risk")}</span><span class="v">${esc(bs.risk)}</span></div>
     </div>`;
   saveDraft();
 }
@@ -200,12 +205,12 @@ function restoreDraft() {
 $("#aiBtn").onclick = async (e) => {
   e.preventDefault();
   const btn = $("#aiBtn"), prev = btn.textContent;
-  btn.disabled = true; btn.textContent = "✨ Thinking…";
+  btn.disabled = true; btn.textContent = t("create.thinking");
   let text = null, limited = false;
   try {
     const res = await fetch("/api/ai", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ label: (NM.STATUSES[status] || {}).label || status, story: $("#f-story").value.trim() }),
+      body: JSON.stringify({ label: NM.locStatus(NM.STATUSES[status] || {}).label || status, story: $("#f-story").value.trim(), lang: window.I18N.lang }),
     });
     if (res.ok) { const j = await res.json(); if (j && j.text) text = j.text; }
     else if (res.status === 429) limited = true;
@@ -214,12 +219,15 @@ $("#aiBtn").onclick = async (e) => {
   if (text) {
     $("#f-story").value = text.slice(0, 240);
     storyTouched = true;            // keep the AI line; don't let a status switch overwrite it
-    toast("✨ Rewritten by AI");
+    toast(t("toast.ai_done"));
+  } else if (isZh()) {              // zh: no curated EN rotation — fall back to the localized status story
+    $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
+    toast(limited ? t("toast.ai_rate") : t("toast.ai_punch"));
   } else {
     const arr = AI_LINES[status] || AI_LINES.domain;   // rate-limited / offline → curated rotation
     aiIdx[status] = ((aiIdx[status] ?? -1) + 1) % arr.length;
     $("#f-story").value = arr[aiIdx[status]];
-    toast(limited ? "Too many AI rewrites — here's a curated one" : "✨ Punched up");
+    toast(limited ? t("toast.ai_rate") : t("toast.ai_punch"));
   }
   btn.disabled = false; btn.textContent = prev;
   render();
@@ -239,7 +247,7 @@ const PERSONA_NAMES = ["Mira", "Kai", "Sol", "Devon", "Aria", "Remy", "Nico", "T
 const pick = a => a[Math.floor(Math.random() * a.length)];
 $("#surprise").onclick = () => {
   status = pick(NM.STATUS_ORDER);
-  $("#f-story").value = pick(AI_LINES[status] || AI_LINES.domain);
+  $("#f-story").value = isZh() ? NM.locStatus(NM.STATUSES[status]).story : pick(AI_LINES[status] || AI_LINES.domain);
   storyTouched = true;
   const nm = pick(PERSONA_NAMES);
   $("#f-name").value = nm;
@@ -247,7 +255,7 @@ $("#surprise").onclick = () => {
   $("#f-handle").value = slugify(nm);
   emoji = pick(PERSONA_EMOJIS);
   buildChips(); buildEmoji(); render();
-  toast("🎲 Rolled a fresh broke persona");
+  toast(t("toast.surprise"));
 };
 
 // turn "paypal.me/you" into "https://paypal.me/you", but leave real schemes (http:, bitcoin:) and raw crypto addresses alone
@@ -275,11 +283,13 @@ async function publish() {
   // create a new page, or UPDATE the one we're editing
   const editing = !!(editingSlug && editToken);
   const btn = $("#publish"), prev = btn.textContent;
-  btn.textContent = editing ? "Updating…" : "Publishing…"; btn.disabled = true;
+  btn.textContent = editing ? t("create.updating") : t("create.publishing"); btn.disabled = true;
   let result = null;
   try {
     const img = $("#shareCanvas").toDataURL("image/png");
-    const meta = { title: `${data.name} is ${NM.brokeScore(data).score}% broke · No Money`, desc: NM.shareText(data) };
+    const score = NM.brokeScore(data).score;
+    const title = isZh() ? `${data.name} 破产 ${score}% · No Money` : `${data.name} is ${score}% broke · No Money`;
+    const meta = { title, desc: NM.shareText(data) };
     const payload = { data, img, meta };
     if (editing) { payload.slug = editingSlug; payload.editToken = editToken; }
     const res = await fetch(base + "api/save", {
@@ -287,11 +297,11 @@ async function publish() {
       body: JSON.stringify(payload),
     });
     if (res.ok) result = await res.json();
-    else if (res.status === 403) toast("This edit link is invalid — can't update");
+    else if (res.status === 403) toast(t("toast.edit_invalid"));
   } catch (e) { /* handled below */ }
   btn.textContent = prev; btn.disabled = false; publishing = false;
 
-  if (!result || !result.slug) { if (!editing) toast("Couldn't publish — check your connection and try again"); return; }
+  if (!result || !result.slug) { if (!editing) toast(t("toast.publish_fail")); return; }
 
   const url = location.origin + base + result.slug;
   // remember edit rights + switch into edit mode so further saves update the same page
@@ -301,13 +311,13 @@ async function publish() {
     enterEditMode(result.slug, result.editToken);
   }
 
-  $(".live-badge").textContent = editing ? "✅ Updated" : "💸 You're officially broke";
-  document.querySelector(".modal-live h3").textContent = editing ? "Your page is updated 🎉" : "Your page is live 🎉";
+  $(".live-badge").textContent = editing ? t("modal.updated_badge") : t("modal.badge");
+  document.querySelector(".modal-live h3").textContent = editing ? t("modal.updated_h3") : t("modal.live_h3");
   $("#resultUrl").value = url;
   $("#openPage").href = url;
   NM.renderShareRow($("#shareRow"), url, data);
   $("#modal").classList.add("open");
-  if (!data.links.length) toast("Tip: add a support link so people can actually tip you 💸");
+  if (!data.links.length) toast(t("toast.tip_add_link"));
 }
 
 // switch the editor into "update this page" mode (after creating, or when opened via an edit link)
@@ -315,15 +325,20 @@ function enterEditMode(slug, token) {
   editingSlug = slug; editToken = token;
   const h = $("#f-handle"); h.value = slug; h.readOnly = true; handleTouched = true;
   $("#editNote").style.display = "";
-  $("#publish").textContent = "Update my page →";
-  document.querySelector(".create-head h1").textContent = "Edit your page";
+  applyEditModeText();
+}
+// edit-mode header/button text — re-applied after a language switch (which resets [data-i18n])
+function applyEditModeText() {
+  if (!editingSlug) return;
+  $("#publish").textContent = t("create.update_btn");
+  document.querySelector(".create-head h1").textContent = t("create.edit_h1");
 }
 
 // load an existing page into the editor (opened via ?edit=<slug>&t=<token>)
-async function loadForEdit(slug, t) {
+async function loadForEdit(slug, t2) {
   let d = null;
   try { const res = await fetch(base + "api/get?slug=" + encodeURIComponent(slug)); if (res.ok) d = (await res.json()).data; } catch (e) {}
-  if (!d) { toast("Couldn't load that page"); return; }
+  if (!d) { toast(t("toast.load_fail")); return; }
   $("#f-name").value = d.name || "";
   $("#f-handle").value = d.handle || slug;
   $("#f-story").value = d.story || "";
@@ -333,9 +348,9 @@ async function loadForEdit(slug, t) {
   emoji = typeof d.emoji === "string" ? d.emoji : "";
   if (Array.isArray(d.links) && d.links.length) links = d.links.map(l => ({ kind: l.kind || "custom", url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
   storyTouched = true;
-  let token = t; try { token = token || localStorage.getItem("nm:edit:" + slug); } catch (e) {}
+  let token = t2; try { token = token || localStorage.getItem("nm:edit:" + slug); } catch (e) {}
   enterEditMode(slug, token);
-  if (!token) toast("No edit access on this device — changes won't save");
+  if (!token) toast(t("toast.no_edit_access"));
   buildChips(); buildEmoji(); buildLinks(); render();
 }
 $("#publish").onclick = publish;
@@ -343,8 +358,8 @@ $("#publishTop").onclick = (e) => { e.preventDefault(); publish(); };
 $("#closeModal").onclick = () => $("#modal").classList.remove("open");
 $("#modal").onclick = e => { if (e.target === $("#modal")) $("#modal").classList.remove("open"); };
 $("#copyResult").onclick = async () => {
-  try { await navigator.clipboard.writeText($("#resultUrl").value); toast("Link copied 🔗"); }
-  catch { $("#resultUrl").select(); toast("Press ⌘/Ctrl+C to copy"); }
+  try { await navigator.clipboard.writeText($("#resultUrl").value); toast(t("toast.link_copied")); }
+  catch { $("#resultUrl").select(); toast(t("toast.copy_manual")); }
 };
 $("#downloadBtn").onclick = () => {
   const a = document.createElement("a");
@@ -360,11 +375,21 @@ $("#downloadBtn").onclick = () => {
   if (!editSlug) {
     const s = qp.get("status");
     if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) {
-      status = s; $("#f-story").value = NM.STATUSES[s].story;
+      status = s; $("#f-story").value = NM.locStatus(NM.STATUSES[s]).story;
     } else {
       restoreDraft();
     }
+    if (!storyTouched) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story; // default story in active language
   }
-  buildChips(); buildEmoji(); buildLinks(); render();   // render defaults/draft first (no blank flash)
+  window.I18N.apply();                                   // translate static [data-i18n] text
+  buildChips(); buildEmoji(); buildLinks(); render();    // render defaults/draft first (no blank flash)
   if (editSlug && /^[a-z0-9-]{2,40}$/.test(editSlug)) loadForEdit(editSlug, qp.get("t")); // then override async
 })();
+
+// language toggle + re-render dynamic content on switch
+$("#langToggle").onclick = () => window.I18N.setLang(isZh() ? "en" : "zh");
+window.addEventListener("langchange", () => {
+  if (!storyTouched && !editingSlug) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
+  buildChips(); buildEmoji(); buildLinks(); render();
+  applyEditModeText();   // setLang re-applied [data-i18n], which would reset edit-mode header/button
+});

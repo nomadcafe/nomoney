@@ -15,11 +15,12 @@
 <body>
 
 <div class="page-shell">
+  <button class="lang-toggle lang-fixed" id="langToggle" data-i18n="lang.other">中文</button>
   <div class="page-card" id="card"><!-- rendered by JS --></div>
 
   <div class="page-actions">
-    <button class="btn btn-primary" id="shareBtn">📸 Get share image</button>
-    <button class="btn btn-ghost" id="copyBtn">🔗 Copy link</button>
+    <button class="btn btn-primary" id="shareBtn" data-i18n="p.share_btn">📸 Get share image</button>
+    <button class="btn btn-ghost" id="copyBtn" data-i18n="p.copy_btn">🔗 Copy link</button>
   </div>
 
   <div class="msg-section" id="msgSection"></div>
@@ -27,27 +28,27 @@
   <div class="remix-cta">
     <div class="remix-emoji">💸</div>
     <div class="remix-text">
-      <strong>Broke too?</strong>
-      <span>Make your own broke page in 60 seconds. No signup.</span>
+      <strong data-i18n="p.remix_strong">Broke too?</strong>
+      <span data-i18n="p.remix_span">Make your own broke page in 60 seconds. No signup.</span>
     </div>
-    <a class="btn btn-primary" id="remixBtn" href="create.html">Make mine →</a>
+    <a class="btn btn-primary" id="remixBtn" href="create.html" data-i18n="p.remix_btn">Make mine →</a>
   </div>
 
   <div class="page-foot">
-    <a href="create.html">made with <b>no.money</b></a>
+    <a href="create.html" data-i18n-html="p.foot">made with <b>no.money</b></a>
   </div>
 </div>
 
 <!-- share modal -->
 <div class="modal-bg" id="modal">
   <div class="modal">
-    <h3>Your share image is ready 📸</h3>
-    <p>Post it on X, Reddit or Telegram. The image does the begging for you.</p>
+    <h3 data-i18n="p.modal_h3">Your share image is ready 📸</h3>
+    <p data-i18n="p.modal_p">Post it on X, Reddit or Telegram. The image does the begging for you.</p>
     <canvas id="shareCanvas"></canvas>
     <div class="share-row" id="shareRow"></div>
     <div class="modal-actions">
-      <button class="btn btn-primary" id="downloadBtn">⬇ Download image</button>
-      <button class="btn btn-ghost" id="closeModal">Close</button>
+      <button class="btn btn-primary" id="downloadBtn" data-i18n="p.modal_download">⬇ Download image</button>
+      <button class="btn btn-ghost" id="closeModal" data-i18n="p.modal_close">Close</button>
     </div>
   </div>
 </div>

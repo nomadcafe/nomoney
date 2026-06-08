@@ -16,6 +16,13 @@ const SYSTEM =
   "No hashtags, no links, no surrounding quotes, at most one emoji. " +
   "Output ONLY the story text — no preamble, no explanation.";
 
+const SYSTEM_ZH =
+  "你为一个搞笑的「破产创作者」求打赏页面（网站叫 No Money）撰写简短的「卖惨故事」。" +
+  "语气：自嘲、戏剧化但轻松、真的好笑，要地道的中文网络口吻，别像翻译腔。" +
+  "2–3 行短句，第一人称，总共不超过 120 个汉字。" +
+  "不要话题标签、不要链接、不要外层引号，最多一个 emoji。" +
+  "只输出故事本身——不要任何前言或解释。";
+
 const PER_MIN = 8;   // AI rewrites per IP per minute
 const PER_DAY = 80;  // ... per day (cost backstop)
 
@@ -42,15 +49,20 @@ export async function onRequestPost({ request, env }) {
 
   const label = String(body.label || "").trim().slice(0, 40) || "broke";
   const story = String(body.story || "").trim().slice(0, 240);
+  const zh = String(body.lang || "").toLowerCase().startsWith("zh");
 
-  const user = story
-    ? `My broke status is "${label}". Rewrite this sob story to be funnier, keep the same vibe:\n\n${story}`
-    : `My broke status is "${label}". Write a funny sob story for it.`;
+  const user = zh
+    ? (story
+        ? `我的破产状态是「${label}」。把这段卖惨故事改写得更好笑，保持同样的调调：\n\n${story}`
+        : `我的破产状态是「${label}」。给它写一段好笑的卖惨故事。`)
+    : (story
+        ? `My broke status is "${label}". Rewrite this sob story to be funnier, keep the same vibe:\n\n${story}`
+        : `My broke status is "${label}". Write a funny sob story for it.`);
 
   let out;
   try {
     const res = await env.AI.run(MODEL, {
-      messages: [{ role: "system", content: SYSTEM }, { role: "user", content: user }],
+      messages: [{ role: "system", content: zh ? SYSTEM_ZH : SYSTEM }, { role: "user", content: user }],
       max_tokens: 160,
       temperature: 0.9,
     });
