@@ -174,17 +174,19 @@ function drawShareImage(canvas, data) {
   const bs = brokeScore(data);
   const pct = pctOf(data);
 
-  // bg
-  ctx.fillStyle = "#0a0b0d"; ctx.fillRect(0, 0, W, H);
-  const g = ctx.createRadialGradient(W / 2, -40, 0, W / 2, -40, 720);
-  g.addColorStop(0, hexA(st.accent, 0.22)); g.addColorStop(1, "rgba(10,11,13,0)");
+  const deep = mixHex(st.accent, "#18191c", 0.42); // accent darkened so it's legible as text on light
+
+  // bg — warm light, matching the page cards
+  ctx.fillStyle = "#faf7f2"; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(W * 0.82, -60, 0, W * 0.82, -60, 760);
+  g.addColorStop(0, hexA(st.accent, 0.16)); g.addColorStop(1, "rgba(250,247,242,0)");
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   // frame
-  ctx.strokeStyle = "#23272e"; ctx.lineWidth = 2; ctx.strokeRect(24, 24, W - 48, H - 48);
+  ctx.strokeStyle = "#e7e0d3"; ctx.lineWidth = 2; ctx.strokeRect(24, 24, W - 48, H - 48);
 
   // giant faint emoji watermark (bottom-right)
   ctx.save();
-  ctx.globalAlpha = 0.06;
+  ctx.globalAlpha = 0.07;
   ctx.font = "360px -apple-system, Segoe UI, sans-serif";
   ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
   ctx.fillText(data.emoji || st.emoji, W - 20, H + 70);
@@ -196,26 +198,27 @@ function drawShareImage(canvas, data) {
   const pillTxt = `${st.emoji}  ${st.label.toUpperCase()}`;
   const pw = ctx.measureText(pillTxt).width + 52;
   roundRect(ctx, 72, 72, pw, 50, 25); ctx.fillStyle = hexA(st.accent, 0.14); ctx.fill();
-  ctx.fillStyle = st.accent; ctx.fillText(pillTxt, 98, 104);
+  ctx.strokeStyle = hexA(st.accent, 0.4); ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = deep; ctx.fillText(pillTxt, 98, 104);
 
   // broke score chip (top-right)
   ctx.font = "700 24px ui-monospace, Menlo, monospace";
   const scoreTxt = `BROKE SCORE  ${bs.score}/100`;
   const sw = ctx.measureText(scoreTxt).width + 52;
-  roundRect(ctx, W - 72 - sw, 72, sw, 50, 25); ctx.fillStyle = "#15181d"; ctx.fill();
-  ctx.strokeStyle = "#23272e"; ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle = "#f4f5f7"; ctx.fillText(scoreTxt, W - 72 - sw + 26, 104);
+  roundRect(ctx, W - 72 - sw, 72, sw, 50, 25); ctx.fillStyle = "#ffffff"; ctx.fill();
+  ctx.strokeStyle = "#e7e0d3"; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = "#18191c"; ctx.fillText(scoreTxt, W - 72 - sw + 26, 104);
 
   // headline: "X is 87% broke."
-  ctx.fillStyle = "#f4f5f7";
+  ctx.fillStyle = "#18191c";
   ctx.font = "800 90px -apple-system, Segoe UI, Roboto, sans-serif";
   ctx.fillText(`${data.name || "Someone"} is`, 72, 232);
-  ctx.fillStyle = st.accent;
+  ctx.fillStyle = deep;
   ctx.fillText(`${bs.score}% broke.`, 72, 330);
 
   // the punchline — first line of their story (or status tagline)
   const quote = (data.story || "").split("\n")[0].trim() || st.tagline || "Help me become slightly less broke.";
-  ctx.fillStyle = "#9aa1ab";
+  ctx.fillStyle = "#565961";
   ctx.font = "italic 400 34px -apple-system, Segoe UI, Roboto, sans-serif";
   const qLines = wrapText(ctx, `“${quote}”`, W - 144).slice(0, 2);
   qLines.forEach((ln, i) => ctx.fillText(ln, 72, 404 + i * 44));
@@ -223,18 +226,18 @@ function drawShareImage(canvas, data) {
 
   // progress bar
   const barY = Math.max(afterQuote + 18, 478), barW = W - 144;
-  roundRect(ctx, 72, barY, barW, 14, 7); ctx.fillStyle = "#15181d"; ctx.fill();
+  roundRect(ctx, 72, barY, barW, 14, 7); ctx.fillStyle = "#e9e3d8"; ctx.fill();
   roundRect(ctx, 72, barY, Math.max(14, barW * pct / 100), 14, 7); ctx.fillStyle = st.accent; ctx.fill();
-  ctx.fillStyle = "#6b727c"; ctx.font = "500 22px ui-monospace, Menlo, monospace";
+  ctx.fillStyle = "#6f6a61"; ctx.font = "500 22px ui-monospace, Menlo, monospace";
   ctx.fillText(`${pct}% to $${(Number(data.goal) || 0).toLocaleString()} survival goal`, 72, barY + 44);
   ctx.textAlign = "right";
-  ctx.fillStyle = st.accent; ctx.fillText(bs.band, W - 72, barY + 44);
+  ctx.fillStyle = deep; ctx.fillText(bs.band, W - 72, barY + 44);
   ctx.textAlign = "left";
 
   // footer url
-  ctx.fillStyle = "#f4f5f7"; ctx.font = "700 30px ui-monospace, Menlo, monospace";
+  ctx.fillStyle = "#18191c"; ctx.font = "700 30px ui-monospace, Menlo, monospace";
   ctx.fillText("no.money/", 72, 596);
-  ctx.fillStyle = st.accent;
+  ctx.fillStyle = deep;
   ctx.fillText(data.handle || "you", 72 + ctx.measureText("no.money/").width, 596);
 }
 
@@ -264,6 +267,13 @@ function roundRect(ctx, x, y, w, h, r) {
 function hexA(hex, a) {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+/* mix hex toward another hex by t (0..1) — used to darken the accent so it's legible as text on light */
+function mixHex(a, b, t) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const ar = (pa >> 16) & 255, ag = (pa >> 8) & 255, ab = pa & 255;
+  const br = (pb >> 16) & 255, bg = (pb >> 8) & 255, bb = pb & 255;
+  return `rgb(${Math.round(ar + (br - ar) * t)}, ${Math.round(ag + (bg - ag) * t)}, ${Math.round(ab + (bb - ab) * t)})`;
 }
 
 /* expose */
