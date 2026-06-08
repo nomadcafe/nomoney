@@ -201,13 +201,14 @@ $("#aiBtn").onclick = async (e) => {
   e.preventDefault();
   const btn = $("#aiBtn"), prev = btn.textContent;
   btn.disabled = true; btn.textContent = "✨ Thinking…";
-  let text = null;
+  let text = null, limited = false;
   try {
     const res = await fetch("/api/ai", {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ label: (NM.STATUSES[status] || {}).label || status, story: $("#f-story").value.trim() }),
     });
     if (res.ok) { const j = await res.json(); if (j && j.text) text = j.text; }
+    else if (res.status === 429) limited = true;
   } catch (err) { /* fall back below */ }
 
   if (text) {
@@ -215,10 +216,10 @@ $("#aiBtn").onclick = async (e) => {
     storyTouched = true;            // keep the AI line; don't let a status switch overwrite it
     toast("✨ Rewritten by AI");
   } else {
-    const arr = AI_LINES[status] || AI_LINES.domain;   // offline / AI busy → curated rotation
+    const arr = AI_LINES[status] || AI_LINES.domain;   // rate-limited / offline → curated rotation
     aiIdx[status] = ((aiIdx[status] ?? -1) + 1) % arr.length;
     $("#f-story").value = arr[aiIdx[status]];
-    toast("✨ Punched up");
+    toast(limited ? "Too many AI rewrites — here's a curated one" : "✨ Punched up");
   }
   btn.disabled = false; btn.textContent = prev;
   render();
