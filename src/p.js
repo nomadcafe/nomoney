@@ -17,7 +17,6 @@ data.msgs = data.msgs || st.msgs;
 
 function defaultLinks(status) {
   const base = [{ kind: "ramen", url: "#" }, { kind: "coffee", url: "#" }];
-  if (status === "domain") base[0] = { kind: "ramen", url: "#" };
   base.push({ kind: "paypal", url: "#" });
   return base;
 }

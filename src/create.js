@@ -2,7 +2,7 @@ import "../assets/core.js"; // sets window.NM + window.I18N + loads the styleshe
 const $ = s => document.querySelector(s);
 const t = (k) => window.I18N.t(k);
 const isZh = () => window.I18N.lang === "zh";
-let status = "domain";
+let status = "ramen";
 let storyTouched = false; // becomes true once the user types their own story — then we never auto-overwrite it
 let handleTouched = false; // once the user edits the handle, stop auto-deriving it from the name
 let emoji = "";           // custom avatar emoji; "" = use the broke status' default
@@ -28,10 +28,10 @@ function buildEmoji() {
 }
 
 const AI_LINES = {
-  domain: [
-    "I came here to build wealth.\nUnfortunately, I discovered premium domains.\nMy portfolio is strong. My fridge is empty.",
-    "Net worth: 47 domains.\nLiquid cash: a single expired coupon.\nFund my intervention.",
-    "I don't have a spending problem.\nI have a 'this name will definitely flip' problem.\nIt has not flipped.",
+  laidoff: [
+    "I got 'impacted by a restructure'.\nTranslation: free time, zero income.\nLinkedIn says Open To Work. So is my wallet.",
+    "Company had a 'tough year'. So did my fridge.\nNow I'm funemployed and accepting tips.\nBridge me to the next offer.",
+    "I was 'let go'. My rent was not.\nFunding the gap between severance and the next yes.",
   ],
   ramen: [
     "I spent my emergency fund on non-emergencies.\nNow I negotiate with instant noodles.\nAn egg would change everything.",
@@ -224,7 +224,7 @@ $("#aiBtn").onclick = async (e) => {
     $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
     toast(limited ? t("toast.ai_rate") : t("toast.ai_punch"));
   } else {
-    const arr = AI_LINES[status] || AI_LINES.domain;   // rate-limited / offline → curated rotation
+    const arr = AI_LINES[status] || AI_LINES.ramen;   // rate-limited / offline → curated rotation
     aiIdx[status] = ((aiIdx[status] ?? -1) + 1) % arr.length;
     $("#f-story").value = arr[aiIdx[status]];
     toast(limited ? t("toast.ai_rate") : t("toast.ai_punch"));
@@ -247,7 +247,7 @@ const PERSONA_NAMES = ["Mira", "Kai", "Sol", "Devon", "Aria", "Remy", "Nico", "T
 const pick = a => a[Math.floor(Math.random() * a.length)];
 $("#surprise").onclick = () => {
   status = pick(NM.STATUS_ORDER);
-  $("#f-story").value = isZh() ? NM.locStatus(NM.STATUSES[status]).story : pick(AI_LINES[status] || AI_LINES.domain);
+  $("#f-story").value = isZh() ? NM.locStatus(NM.STATUSES[status]).story : pick(AI_LINES[status] || AI_LINES.ramen);
   storyTouched = true;
   const nm = pick(PERSONA_NAMES);
   $("#f-name").value = nm;

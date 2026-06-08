@@ -21,13 +21,13 @@ const STATUSES = {
     zh: { label: "房租恐慌", tagline: "房租到期了。我的余额不同意。", story: "房租到期了，我的银行余额表示不同意。\n我正在「破产」和「睡天桥」之间艰难过渡。", risk: "正在和房东谈判，且节节败退" },
     msgs: [["The floor is technically a bed too. Hang in there.", "anon"], ["Been there. Sending vibes + $.", "mara"]],
   },
-  domain: {
-    label: "Domain Debt", emoji: "🌐", accent: "#00d563", base: 79, theme: "clean",
-    tagline: "I bought domains instead of food. Again.",
-    story: "I came here to build wealth.\nUnfortunately, I discovered premium domains.\nMy portfolio is strong. My fridge is empty.",
-    risk: "May buy another domain instead of dinner",
-    zh: { label: "域名负债", tagline: "又把买饭钱拿去买域名了。", story: "我本是来搞钱的。\n结果发现了高价域名。\n我的资产很雄厚，我的冰箱很空。", risk: "可能又拿买菜钱去抢注域名" },
-    msgs: [["Please stop checking ExpiredDomains.", "anon"], ["One more .io and you're done.", "ty"], ["Stay strong, investor.", "dev_jen"]],
+  laidoff: {
+    label: "Laid Off", emoji: "📦", accent: "#00d563", base: 83, theme: "clean",
+    tagline: "Company said 'tough decision'. My rent agreed.",
+    story: "I got 'impacted by a restructure'.\nTranslation: lots of free time, zero income.\nLinkedIn says I'm Open To Work. So is my wallet.",
+    risk: "Refreshes job boards more often than their pulse",
+    zh: { label: "被裁了", tagline: "公司说「这是个艰难的决定」，我的房租表示同意。", story: "我被「优化」了。\n翻译一下：时间大把，收入为零。\n领英写着「正在找工作」，我的钱包也是。", risk: "刷招聘软件比刷自己心跳还勤" },
+    msgs: [["'Open to work' but make it iconic. You got this.", "anon"], ["Severance is just a long coffee break. Hang in.", "mei"], ["Their loss, literally. Sending $.", "dev_jen"]],
   },
   crypto: {
     label: "Crypto Damage", emoji: "📉", accent: "#ff5468", base: 81, theme: "gradient",
@@ -63,7 +63,7 @@ const STATUSES = {
   },
 };
 
-const STATUS_ORDER = ["ramen", "rent", "domain", "crypto", "student", "startup", "freelance"];
+const STATUS_ORDER = ["ramen", "rent", "laidoff", "crypto", "student", "startup", "freelance"];
 
 /* full demo pages used on the landing page (p.html?demo=key).
    curated funny button labels — the buttons ARE part of the joke. */
@@ -72,8 +72,8 @@ const DEMOS = {
     links: [{ kind: "ramen", url: "#", label: "🍜 Add an egg to my life" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#" }] },
   rent:    { name: "Devon", handle: "rent",          status: "rent",   goal: 850, raised: 310, zhcta: "🏚️ 别让我露宿",
     links: [{ kind: "custom", url: "#", label: "🏚️ Keep me indoors" }, { kind: "paypal", url: "#" }, { kind: "coffee", url: "#" }] },
-  domain:  { name: "Mira",  handle: "domain-addict", status: "domain", goal: 500, raised: 210, zhcta: "🍜 请我吃泡面",
-    links: [{ kind: "ramen", url: "#", label: "🍜 Buy me ramen" }, { kind: "custom", url: "#", label: "🛑 Stop my next domain purchase" }, { kind: "paypal", url: "#", label: "💸 Fund my recovery arc" }] },
+  laidoff: { name: "Mira",  handle: "laidoff",      status: "laidoff", goal: 500, raised: 210, zhcta: "📦 资助我待业",
+    links: [{ kind: "custom", url: "#", label: "📦 Fund my funemployment" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Bridge me to the next offer" }] },
   crypto:  { name: "Sol",   handle: "crypto-loss",   status: "crypto", goal: 1000, raised: 137, zhcta: "📉 资助我的回血",
     links: [{ kind: "custom", url: "#", label: "📉 Fund my recovery arc" }, { kind: "crypto", url: "#", label: "🪙 Send a coin that won't crash" }, { kind: "paypal", url: "#" }] },
   student: { name: "Aria",  handle: "student",       status: "student", goal: 300, raised: 189, zhcta: "☕ 给我的期末续命",
