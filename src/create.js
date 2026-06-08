@@ -57,6 +57,10 @@ const AI_LINES = {
     "Invoices sent. Payments pending. Spirit broken.\n'The check is coming.' It is not coming.\nBridge me to net-30.",
     "Owed money by four people. Replied to by zero.\nYour tip clears faster than my invoices.",
   ],
+  pet: [
+    "I don't have a pet. I have a tiny landlord with fur.\nVet bills, fancy kibble, a toy ignored for the box.\nTips fund the snacks.",
+    "My cat doesn't pay rent but somehow I work for it.\nFund the imported treats. It deserves nothing and gets everything.",
+  ],
 };
 const aiIdx = {};
 

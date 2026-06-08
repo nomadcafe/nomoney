@@ -61,9 +61,17 @@ const STATUSES = {
     zh: { label: "自由职业旱季", tagline: "发票发了，钱没到，心碎了。", story: "发票发了，款项待付，人快碎了。\n客户说「钱马上到」。钱不会到。\n帮我撑过这个回款周期。", risk: "四个人欠我钱，零个人回我消息" },
     msgs: [["Net-30 is a personality test. You're passing.", "anon"], ["Chasing that invoice for you in spirit.", "rin"]],
   },
+  pet: {
+    label: "Pet's Employee", emoji: "🐱", accent: "#ff8a3d", base: 75, theme: "mono",
+    tagline: "I have a job: serving a cat who doesn't pay me.",
+    story: "I don't have a pet. I have a tiny landlord with fur.\nVet bills, imported kibble, a $40 toy ignored for the box.\nI just work here now. Tips fund the snacks.",
+    risk: "Will spend rent on a fountain the cat refuses to drink from",
+    zh: { label: "给猫主子打工", tagline: "我有份工作：伺候一只不给我发工资的猫。", story: "我养的不是宠物，是一位带毛的房东。\n看病、进口猫粮、四十块的玩具——它只玩盒子。\n我现在是这儿的打工人，打赏都拿去进贡零食。", risk: "会拿房租给主子买它根本不喝的饮水机" },
+    msgs: [["Give the tiny landlord a raise. Sending $.", "anon"], ["The box was the real gift. Stay strong.", "lee"]],
+  },
 };
 
-const STATUS_ORDER = ["ramen", "rent", "laidoff", "crypto", "student", "startup", "freelance"];
+const STATUS_ORDER = ["ramen", "rent", "laidoff", "crypto", "student", "startup", "freelance", "pet"];
 
 /* full demo pages used on the landing page (p.html?demo=key).
    curated funny button labels — the buttons ARE part of the joke. */
@@ -78,6 +86,8 @@ const DEMOS = {
     links: [{ kind: "custom", url: "#", label: "📉 Fund my recovery arc" }, { kind: "crypto", url: "#", label: "🪙 Send a coin that won't crash" }, { kind: "paypal", url: "#" }] },
   student: { name: "Aria",  handle: "student",       status: "student", goal: 300, raised: 189, zhcta: "☕ 给我的期末续命",
     links: [{ kind: "coffee", url: "#", label: "☕ Caffeinate my finals" }, { kind: "custom", url: "#", label: "🍕 Diversify my pizza diet" }, { kind: "paypal", url: "#" }] },
+  pet:     { name: "Tess",  handle: "catstaff",      status: "pet",    goal: 300, raised: 96, zhcta: "🐱 给主子进贡",
+    links: [{ kind: "custom", url: "#", label: "🐱 Fund the tiny landlord" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Pay the cat's bills" }] },
 };
 
 const PAYMENT_KINDS = {
