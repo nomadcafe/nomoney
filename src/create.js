@@ -310,7 +310,7 @@ async function publish() {
   const url = location.origin + base + result.slug;
   // remember edit rights + switch into edit mode so further saves update the same page
   if (result.editToken) {
-    try { localStorage.setItem("nm:edit:" + result.slug, result.editToken); } catch (e) {}
+    try { localStorage.setItem("nm:edit:" + result.slug, result.editToken); localStorage.setItem("nm:last", result.slug); } catch (e) {}
     $("#editUrl").value = location.origin + base + "create.html?edit=" + result.slug + "&t=" + encodeURIComponent(result.editToken);
     enterEditMode(result.slug, result.editToken);
   }
@@ -376,6 +376,35 @@ $("#downloadBtn").onclick = () => {
   a.click();
 };
 
+// pages this device can still edit (capability tokens kept in localStorage)
+function listEditablePages() {
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("nm:edit:")) out.push({ slug: k.slice(8), token: localStorage.getItem(k) });
+    }
+  } catch (e) {}
+  return out;
+}
+// banner offering to resume editing an existing page (so "Create my page" doesn't silently orphan it)
+function showResumeBar() {
+  if (editingSlug) return;                       // already editing — nothing to resume
+  const pages = listEditablePages();
+  if (!pages.length) { $("#resumeBar").style.display = "none"; return; }
+  let last = null; try { last = localStorage.getItem("nm:last"); } catch (e) {}
+  const pick = pages.find(p => p.slug === last) || pages[0];
+  const extra = pages.length > 1 ? ` (+${pages.length - 1})` : "";
+  const bar = $("#resumeBar");
+  bar.innerHTML =
+    `<span class="resume-txt">💸 ${t("resume.has")} <b>no.money/${esc(pick.slug)}</b>${extra}</span>` +
+    `<span class="resume-actions"><button class="btn btn-primary" id="resumeEdit">${t("resume.edit")}</button>` +
+    `<button class="btn btn-ghost" id="resumeNew">${t("resume.new")}</button></span>`;
+  bar.style.display = "";
+  $("#resumeEdit").onclick = () => { bar.style.display = "none"; loadForEdit(pick.slug, pick.token); };
+  $("#resumeNew").onclick = () => { bar.style.display = "none"; };
+}
+
 // init: ?edit=<slug> loads a page for editing; else ?status= themed fresh start; else restore draft
 (function init() {
   const qp = new URLSearchParams(location.search);
@@ -392,6 +421,7 @@ $("#downloadBtn").onclick = () => {
   window.I18N.apply();                                   // translate static [data-i18n] text
   buildChips(); buildEmoji(); buildLinks(); render();    // render defaults/draft first (no blank flash)
   if (editSlug && /^[a-z0-9-]{2,40}$/.test(editSlug)) loadForEdit(editSlug, qp.get("t")); // then override async
+  else showResumeBar();                                  // surface an existing page to keep editing
 })();
 
 // language toggle + re-render dynamic content on switch
@@ -400,4 +430,5 @@ window.addEventListener("langchange", () => {
   if (!storyTouched && !editingSlug) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
   buildChips(); buildEmoji(); buildLinks(); render();
   applyEditModeText();   // setLang re-applied [data-i18n], which would reset edit-mode header/button
+  if ($("#resumeBar").style.display !== "none") showResumeBar();   // refresh banner text in new language
 });
