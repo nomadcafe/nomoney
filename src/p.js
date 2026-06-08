@@ -163,8 +163,13 @@ document.getElementById("downloadBtn").onclick = () => {
   a.href = document.getElementById("shareCanvas").toDataURL("image/png");
   a.click();
 };
+function flashCopied(btn) {
+  if (btn._t) { clearTimeout(btn._t); } else { btn._label = btn.textContent; }
+  btn.textContent = t("btn.copied"); btn.classList.add("copied");
+  btn._t = setTimeout(() => { btn.textContent = btn._label; btn.classList.remove("copied"); btn._t = null; }, 1400);
+}
 document.getElementById("copyBtn").onclick = async () => {
-  try { await navigator.clipboard.writeText(location.href); toast(t("toast.link_copied")); }
+  try { await navigator.clipboard.writeText(location.href); toast(t("toast.link_copied")); flashCopied(document.getElementById("copyBtn")); }
   catch { toast(t("toast.copy_fail")); }
 };
 

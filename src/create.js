@@ -361,12 +361,17 @@ $("#publish").onclick = publish;
 $("#publishTop").onclick = (e) => { e.preventDefault(); publish(); };
 $("#closeModal").onclick = () => $("#modal").classList.remove("open");
 $("#modal").onclick = e => { if (e.target === $("#modal")) $("#modal").classList.remove("open"); };
+function flashCopied(btn) {
+  if (btn._t) { clearTimeout(btn._t); } else { btn._label = btn.textContent; }
+  btn.textContent = t("btn.copied"); btn.classList.add("copied");
+  btn._t = setTimeout(() => { btn.textContent = btn._label; btn.classList.remove("copied"); btn._t = null; }, 1400);
+}
 $("#copyResult").onclick = async () => {
-  try { await navigator.clipboard.writeText($("#resultUrl").value); toast(t("toast.link_copied")); }
+  try { await navigator.clipboard.writeText($("#resultUrl").value); toast(t("toast.link_copied")); flashCopied($("#copyResult")); }
   catch { $("#resultUrl").select(); toast(t("toast.copy_manual")); }
 };
 $("#copyEdit").onclick = async () => {
-  try { await navigator.clipboard.writeText($("#editUrl").value); toast(t("toast.edit_copied")); }
+  try { await navigator.clipboard.writeText($("#editUrl").value); toast(t("toast.edit_copied")); flashCopied($("#copyEdit")); }
   catch { $("#editUrl").select(); toast(t("toast.copy_manual")); }
 };
 $("#downloadBtn").onclick = () => {
