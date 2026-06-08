@@ -1,5 +1,6 @@
 /* No Money — core: broke-status presets, broke score, share-image renderer, sharing helpers.
-   Zero dependencies. Pages are stored server-side via short links (see /functions); no signup. */
+   Zero runtime deps. Pages are stored server-side via short links (see /functions); no signup. */
+import "./style.css"; // bundled + hashed by Vite (loaded on every page that imports core)
 
 /* ---------------- broke statuses ---------------- */
 const STATUSES = {

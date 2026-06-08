@@ -11,3 +11,7 @@ node_modules/
 
 # scratch/temp html used for headless render tests
 _*.html
+
+# vite
+node_modules/
+dist/

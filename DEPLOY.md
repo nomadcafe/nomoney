@@ -1,7 +1,13 @@
 # Deploy — No Money (Cloudflare Pages + KV)
 
-The site is static HTML/CSS/JS. Short links + social (OG) previews are added by three
-**Cloudflare Pages Functions** in `/functions`, backed by one **KV namespace**.
+The front end is built with **Vite** (`npm run build` → `dist/`). Short links + social (OG)
+previews + the message wall are **Cloudflare Pages Functions** in `/functions` (NOT touched by
+the Vite build), backed by one **KV namespace**.
+
+> **Cloudflare Pages build settings (required for the Git deploy):**
+> Settings → Builds & deployments → **Build command: `npm run build`**, **Build output directory: `dist`**,
+> Framework preset: None. (Functions are still auto-detected from `/functions`.)
+> Without these, the Git build would serve the unbuilt source and break — set them before pushing.
 
 - `POST /api/save` → stores the page JSON + the browser-generated share PNG, returns a vanity `slug`
                       (derived from the user's handle; reserved names / collisions get a short `-suffix`)
