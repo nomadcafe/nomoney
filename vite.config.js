@@ -12,6 +12,7 @@ export default defineConfig({
         index: "index.html",
         create: "create.html",
         p: "p.html",
+        admin: "admin.html",
         notfound: "404.html",
       },
     },

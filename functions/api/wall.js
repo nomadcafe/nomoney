@@ -58,6 +58,13 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch { return json({ error: "bad json" }, 400); }
   if (!body.token || body.token !== admin) return json({ error: "forbidden" }, 403);
 
+  // admin: list current featured + recently-created pages (for the /admin picker)
+  if (body.list) {
+    let recent = [];
+    try { recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]"); } catch {}
+    return json({ featured: await readList(env), recent: Array.isArray(recent) ? recent : [] });
+  }
+
   let list = await readList(env);
   const clean = s => (typeof s === "string" && SLUG_RE.test(s)) ? s : null;
 

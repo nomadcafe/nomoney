@@ -55,6 +55,12 @@ createServer(async (req, res) => {
     KV.set(slug, JSON.stringify({ d: data, m: body.meta || {}, t: token }));
     const PRE = "data:image/png;base64,";
     if (typeof body.img === "string" && body.img.startsWith(PRE)) KV.set("img:" + slug, Buffer.from(body.img.slice(PRE.length), "base64"));
+    if (!(body.slug && body.editToken)) { // recent-created index (create only)
+      let recent = []; try { recent = JSON.parse(KV.get("pages:recent") || "[]"); } catch {}
+      recent = (Array.isArray(recent) ? recent : []).filter(r => r && r.slug !== slug);
+      recent.unshift({ slug, name: data.name || "", status: data.status || "ramen", emoji: typeof data.emoji === "string" ? data.emoji : "" });
+      KV.set("pages:recent", JSON.stringify(recent.slice(0, 100)));
+    }
     return send(res, 200, JSON.stringify({ slug, editToken: token }), { "content-type": "application/json" });
   }
 
@@ -113,6 +119,7 @@ createServer(async (req, res) => {
     if (req.method === "POST") {
       let body = {}; try { body = JSON.parse(await new Promise(r => { let s = ""; req.on("data", c => s += c); req.on("end", () => r(s || "{}")); })); } catch {}
       if (body.token !== "dev") return send(res, 403, '{"error":"forbidden (dev token: dev)"}', { "content-type": "application/json" });
+      if (body.list) { let recent = []; try { recent = JSON.parse(KV.get("pages:recent") || "[]"); } catch {} return send(res, 200, JSON.stringify({ featured: readList(), recent }), { "content-type": "application/json" }); }
       let list = readList();
       if (Array.isArray(body.set)) list = body.set.filter(s => SLUG_RE.test(s));
       else if (body.add && SLUG_RE.test(body.add)) list = [body.add, ...list.filter(x => x !== body.add)];

@@ -91,5 +91,17 @@ export async function onRequestPost({ request, env }) {
   await env.PAGES.put(slug, jsonStr);
   if (png) await env.PAGES.put("img:" + slug, png);
 
+  // maintain a "recently created" index for the admin wall picker (create only; best-effort)
+  if (!(body.slug && body.editToken)) {
+    try {
+      let recent = [];
+      try { recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]"); } catch {}
+      recent = (Array.isArray(recent) ? recent : []).filter(r => r && r.slug !== slug);
+      recent.unshift({ slug, name: data.name || "", status: data.status || "ramen", emoji: typeof data.emoji === "string" ? data.emoji : "" });
+      if (recent.length > 100) recent = recent.slice(0, 100);
+      await env.PAGES.put("pages:recent", JSON.stringify(recent));
+    } catch (e) { /* index is best-effort */ }
+  }
+
   return json({ slug, editToken: token });
 }
