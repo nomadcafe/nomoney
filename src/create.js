@@ -419,6 +419,7 @@ function showResumeBar() {
     if (!storyTouched) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story; // default story in active language
   }
   window.I18N.apply();                                   // translate static [data-i18n] text
+  document.title = t("title.create");
   buildChips(); buildEmoji(); buildLinks(); render();    // render defaults/draft first (no blank flash)
   if (editSlug && /^[a-z0-9-]{2,40}$/.test(editSlug)) loadForEdit(editSlug, qp.get("t")); // then override async
   else showResumeBar();                                  // surface an existing page to keep editing
@@ -430,5 +431,6 @@ window.addEventListener("langchange", () => {
   if (!storyTouched && !editingSlug) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
   buildChips(); buildEmoji(); buildLinks(); render();
   applyEditModeText();   // setLang re-applied [data-i18n], which would reset edit-mode header/button
+  document.title = t("title.create");
   if ($("#resumeBar").style.display !== "none") showResumeBar();   // refresh banner text in new language
 });

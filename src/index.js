@@ -124,7 +124,8 @@ async function loadWall() {
 function renderAll() { renderHero(); renderDemos(); renderWall(); }
 
 window.I18N.apply();                       // translate static [data-i18n] text
+document.title = t("title.index");
 renderAll();                               // render dynamic cards in the current language
 loadWall();                                // fetch + reveal the curated wall (no-op on static/local)
 document.getElementById("langToggle").onclick = () => window.I18N.setLang(isZh() ? "en" : "zh");
-window.addEventListener("langchange", renderAll);  // setLang already re-applied static text
+window.addEventListener("langchange", () => { document.title = t("title.index"); renderAll(); });  // setLang already re-applied static text
