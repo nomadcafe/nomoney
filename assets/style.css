@@ -46,6 +46,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   position: relative;
+  overflow-x: hidden;   /* guard: nothing should create a horizontal scrollbar */
 }
 /* ambient background tint */
 body::before {
@@ -138,7 +139,7 @@ a { color: inherit; text-decoration: none; }
 /* ---------- section ---------- */
 .section { padding: 88px 0; }
 .section-head { text-align: center; max-width: 44ch; margin: 0 auto 52px; }
-.section-head h2 { font-family: var(--display); font-size: clamp(30px, 4vw, 44px); letter-spacing: -0.035em; font-weight: 700; margin-bottom: 14px; line-height: 1.05; }
+.section-head h2 { font-family: var(--display); font-size: clamp(30px, 4vw, 44px); letter-spacing: -0.035em; font-weight: 700; margin-bottom: 14px; line-height: 1.05; text-wrap: balance; }
 .section-head p { color: var(--ink-dim); font-size: 17px; line-height: 1.6; }
 .eyebrow { font-family: var(--mono); font-size: 12px; color: var(--green-text); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 16px; }
 
@@ -498,4 +499,12 @@ a { color: inherit; text-decoration: none; }
   .create-layout { grid-template-columns: 1fr; }
   .preview-col { position: static; order: -1; }
   .nav-links a:not(.btn) { display: none; }
+}
+
+@media (max-width: 480px) {
+  .wrap { padding: 0 16px; }                       /* reclaim width so the nav CTA fits */
+  .nav .wrap { height: 60px; }
+  .nav-links { gap: 8px; }
+  .nav-links .btn-primary { padding: 8px 13px; font-size: 13px; }
+  .hero { padding: 40px 0 48px; }
 }
