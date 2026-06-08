@@ -86,6 +86,11 @@ createServer(async (req, res) => {
     }
   }
 
+  if (path === "/api/ai" && req.method === "POST") {
+    // mock (no Workers AI locally) — real model runs on Cloudflare / via `wrangler pages dev`
+    return send(res, 200, JSON.stringify({ text: "I had a budget. The budget had other plans.\nNow I'm rich in regret and ramen. (mock AI)" }), { "content-type": "application/json" });
+  }
+
   if (path === "/api/get" && req.method === "GET") {
     const slug = new URL(req.url, "http://localhost").searchParams.get("slug") || "";
     if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });

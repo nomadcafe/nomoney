@@ -7,3 +7,7 @@ pages_build_output_dir = "dist"
 [[kv_namespaces]]
 binding = "PAGES"
 id = "3c15cd86ba634f76aa3e0f685be49d77"
+
+# Workers AI — powers the "rewrite my sob story (AI)" button (functions/api/ai.js)
+[ai]
+binding = "AI"

@@ -197,13 +197,31 @@ function restoreDraft() {
   } catch (e) { /* corrupt draft — ignore */ }
 }
 
-$("#aiBtn").onclick = (e) => {
+$("#aiBtn").onclick = async (e) => {
   e.preventDefault();
-  const arr = AI_LINES[status] || AI_LINES.domain;
-  aiIdx[status] = ((aiIdx[status] ?? -1) + 1) % arr.length;
-  $("#f-story").value = arr[aiIdx[status]];
+  const btn = $("#aiBtn"), prev = btn.textContent;
+  btn.disabled = true; btn.textContent = "✨ Thinking…";
+  let text = null;
+  try {
+    const res = await fetch("/api/ai", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ label: (NM.STATUSES[status] || {}).label || status, story: $("#f-story").value.trim() }),
+    });
+    if (res.ok) { const j = await res.json(); if (j && j.text) text = j.text; }
+  } catch (err) { /* fall back below */ }
+
+  if (text) {
+    $("#f-story").value = text.slice(0, 240);
+    storyTouched = true;            // keep the AI line; don't let a status switch overwrite it
+    toast("✨ Rewritten by AI");
+  } else {
+    const arr = AI_LINES[status] || AI_LINES.domain;   // offline / AI busy → curated rotation
+    aiIdx[status] = ((aiIdx[status] ?? -1) + 1) % arr.length;
+    $("#f-story").value = arr[aiIdx[status]];
+    toast("✨ Punched up");
+  }
+  btn.disabled = false; btn.textContent = prev;
   render();
-  toast("✨ Punched up");
 };
 
 $("#f-story").addEventListener("input", () => { storyTouched = true; render(); });
