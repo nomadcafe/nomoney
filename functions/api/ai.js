@@ -23,11 +23,17 @@ const SYSTEM_ZH =
   "不要话题标签、不要链接、不要外层引号，最多一个 emoji。" +
   "只输出故事本身——不要任何前言或解释。";
 
-const PER_MIN = 8;   // AI rewrites per IP per minute
-const PER_DAY = 80;  // ... per day (cost backstop)
+// Cost-protection backstop. Defaults are deliberately conservative; override in
+// production via env vars (AI_RL_PER_MIN / AI_RL_PER_DAY) so the public ceiling
+// isn't your real one. The WAF rate-limit rule is the hard cap; this is best-effort.
+const DEFAULT_PER_MIN = 8;   // AI rewrites per IP per minute
+const DEFAULT_PER_DAY = 80;  // ... per day
 
 export async function onRequestPost({ request, env }) {
   if (!env.AI) return json({ error: "ai not configured" }, 500);
+
+  const perMin = Number(env.AI_RL_PER_MIN) || DEFAULT_PER_MIN;
+  const perDay = Number(env.AI_RL_PER_DAY) || DEFAULT_PER_DAY;
 
   // simple per-IP rate limit (KV counters) to protect Workers AI cost
   if (env.PAGES) {
@@ -36,7 +42,7 @@ export async function onRequestPost({ request, env }) {
     const mKey = `airl:m:${ip}:${Math.floor(now / 60000)}`;
     const dKey = `airl:d:${ip}:${Math.floor(now / 86400000)}`;
     const [m, d] = await Promise.all([env.PAGES.get(mKey), env.PAGES.get(dKey)]);
-    if ((+m || 0) >= PER_MIN || (+d || 0) >= PER_DAY) return json({ error: "rate limited" }, 429);
+    if ((+m || 0) >= perMin || (+d || 0) >= perDay) return json({ error: "rate limited" }, 429);
     // count the attempt up front so failed calls still consume quota (can't be spammed)
     await Promise.all([
       env.PAGES.put(mKey, String((+m || 0) + 1), { expirationTtl: 120 }),
