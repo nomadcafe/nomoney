@@ -287,6 +287,36 @@ function render() {
       <div class="bs-row"><span class="k">Status</span><span class="v">${esc(bs.band)}</span></div>
       <div class="bs-row"><span class="k">Risk level</span><span class="v">${esc(bs.risk)}</span></div>
     </div>`;
+  saveDraft();
+}
+
+// keep the in-progress page in localStorage so a refresh / accidental close doesn't lose it
+function saveDraft() {
+  try {
+    localStorage.setItem("nm:draft", JSON.stringify({
+      name: $("#f-name").value, handle: $("#f-handle").value, status, emoji,
+      story: $("#f-story").value, goal: $("#f-goal").value, raised: $("#f-raised").value,
+      links, storyTouched, handleTouched,
+    }));
+  } catch (e) { /* private mode / quota — ignore */ }
+}
+function restoreDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem("nm:draft") || "null");
+    if (!d || typeof d !== "object") return;
+    if (d.name != null) $("#f-name").value = d.name;
+    if (d.handle != null) $("#f-handle").value = d.handle;
+    if (d.story != null) $("#f-story").value = d.story;
+    if (d.goal != null) $("#f-goal").value = d.goal;
+    if (d.raised != null) $("#f-raised").value = d.raised;
+    if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
+    if (typeof d.emoji === "string") emoji = d.emoji;
+    if (Array.isArray(d.links) && d.links.length) {
+      links = d.links.map(l => ({ kind: l.kind || "custom", url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
+    }
+    storyTouched = !!d.storyTouched;
+    handleTouched = !!d.handleTouched;
+  } catch (e) { /* corrupt draft — ignore */ }
 }
 
 $("#aiBtn").onclick = (e) => {
@@ -383,10 +413,14 @@ $("#downloadBtn").onclick = () => {
   a.click();
 };
 
-// prefill from ?status=<key> — themed fresh start (e.g. the "Make mine" CTA on a shared page)
-(function prefill() {
+// init: ?status= (themed fresh start from a "Make mine" CTA) wins; otherwise restore the saved draft
+(function init() {
   const s = new URLSearchParams(location.search).get("status");
-  if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) { status = s; $("#f-story").value = NM.STATUSES[s].story; }
+  if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) {
+    status = s; $("#f-story").value = NM.STATUSES[s].story;
+  } else {
+    restoreDraft();
+  }
 })();
 
 buildChips(); buildEmoji(); buildLinks(); render();
