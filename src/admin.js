@@ -86,6 +86,13 @@ $("#unlock").onclick = () => {
   load();
 };
 $("#adminToken").addEventListener("keydown", e => { if (e.key === "Enter") $("#unlock").click(); });
+$("#addSlugBtn").onclick = () => {
+  const v = $("#addSlug").value.trim().toLowerCase();
+  if (!/^[a-z0-9-]{2,40}$/.test(v)) { toast("Enter a valid slug"); return; }
+  $("#addSlug").value = "";
+  act({ add: v });
+};
+$("#addSlug").addEventListener("keydown", e => { if (e.key === "Enter") $("#addSlugBtn").click(); });
 $("#logout").onclick = () => { token = ""; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} $("#adminToken").value = ""; showTokenBox("Token forgotten"); };
 
 load();
