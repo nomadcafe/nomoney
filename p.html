@@ -23,6 +23,8 @@
     <button class="btn btn-ghost" id="copyBtn">🔗 Copy link</button>
   </div>
 
+  <div class="msg-section" id="msgSection"></div>
+
   <div class="remix-cta">
     <div class="remix-emoji">💸</div>
     <div class="remix-text">
@@ -93,9 +95,6 @@ function render() {
     return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener">${esc(label)}</a>`;
   }).join("");
 
-  const msgs = (data.msgs || []).map(m =>
-    `<div class="msg">${esc(m[0])}<div class="who">— ${esc(m[1] || "anon")}</div></div>`).join("");
-
   document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
   document.getElementById("card").innerHTML = `
     <div class="avatar">${esc(data.emoji || st.emoji)}</div>
@@ -121,8 +120,6 @@ function render() {
       <div class="bs-row"><span class="k">Status</span><span class="v">${esc(bs.band)}</span></div>
       <div class="bs-row"><span class="k">Risk level</span><span class="v">${esc(bs.risk)}</span></div>
     </div>
-
-    ${msgs ? `<div class="msg-wall"><h4>Support messages</h4>${msgs}</div>` : ""}
   `;
 }
 
@@ -133,6 +130,68 @@ function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>
 function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); }
 
 render();
+
+/* ---------- support messages (wall of pity) ---------- */
+// vanity pages live at /<slug>; demos at /p.html?demo= (read-only static msgs)
+const slug = (window.__PAGE__ ? decodeURIComponent(location.pathname).replace(/^\/+|\/+$/g, "") : "");
+const isVanity = /^[a-z0-9-]{2,40}$/.test(slug);
+const ownerToken = isVanity ? (() => { try { return localStorage.getItem("nm:edit:" + slug); } catch (e) { return null; } })() : null;
+let messages = [];
+
+async function initMessages() {
+  if (isVanity) {
+    try { const r = await fetch("/api/msgs?slug=" + encodeURIComponent(slug)); if (r.ok) messages = (await r.json()).messages || []; } catch (e) {}
+  } else {
+    messages = (data.msgs || []).map(m => ({ n: m[1] || "anon", t: m[0] })); // demo: static, read-only
+  }
+  renderMsgSection();
+}
+
+function renderMsgSection() {
+  const el = document.getElementById("msgSection");
+  const form = isVanity ? `
+    <div class="msg-form">
+      <input id="mName" maxlength="24" placeholder="Your name (optional)" />
+      <textarea id="mText" maxlength="140" placeholder="Cheer them on — or roast them. Keep it funny."></textarea>
+      <button class="btn btn-primary btn-block" id="mSend">Post message</button>
+    </div>` : "";
+  el.innerHTML = `<h4 class="msg-title">Support messages${messages.length ? ` (${messages.length})` : ""}</h4>${form}<div class="msg-wall" id="msgWall"></div>`;
+  if (isVanity) document.getElementById("mSend").onclick = postMsg;
+  renderWall();
+}
+
+function renderWall() {
+  const w = document.getElementById("msgWall");
+  if (!messages.length) { w.innerHTML = `<p class="msg-empty">No messages yet — be the first to pity them (financially).</p>`; return; }
+  w.innerHTML = messages.map(m =>
+    `<div class="msg">${esc(m.t)}<div class="who">— ${esc(m.n || "anon")}${(ownerToken && m.id) ? ` <button class="msg-del" data-id="${esc(m.id)}" title="delete">×</button>` : ""}</div></div>`).join("");
+  if (ownerToken) w.querySelectorAll(".msg-del").forEach(b => b.onclick = () => deleteMsg(b.dataset.id));
+}
+
+async function postMsg() {
+  const btn = document.getElementById("mSend"), prev = btn.textContent;
+  const name = document.getElementById("mName").value;
+  const text = document.getElementById("mText").value.trim();
+  if (!text) { toast("Write something first"); return; }
+  btn.disabled = true; btn.textContent = "Posting…";
+  try {
+    const r = await fetch("/api/msgs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, name, text }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok && j.message) { messages.unshift(j.message); document.getElementById("mText").value = ""; renderMsgSection(); toast("Posted 🎉"); }
+    else toast(j.error === "no links allowed" ? "Links aren't allowed" : "Couldn't post");
+  } catch (e) { toast("Couldn't post — try again"); }
+  btn.disabled = false; btn.textContent = prev;
+}
+
+async function deleteMsg(id) {
+  try {
+    const r = await fetch("/api/msgs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, editToken: ownerToken, del: id }) });
+    if (r.ok) { messages = messages.filter(m => m.id !== id); renderMsgSection(); toast("Deleted"); }
+    else toast("Couldn't delete");
+  } catch (e) { toast("Couldn't delete"); }
+}
+
+initMessages();
 
 // viral loop: "make mine" starts a fresh page themed to the same broke status
 document.getElementById("remixBtn").href = "create.html?status=" + encodeURIComponent(data.status || "");

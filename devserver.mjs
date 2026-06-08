@@ -58,6 +58,34 @@ createServer(async (req, res) => {
     return send(res, 200, JSON.stringify({ slug, editToken: token }), { "content-type": "application/json" });
   }
 
+  if (path === "/api/msgs") {
+    const sp = new URL(req.url, "http://localhost").searchParams;
+    if (req.method === "GET") {
+      const slug = sp.get("slug") || ""; if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
+      let arr = []; try { arr = JSON.parse(KV.get("msg:" + slug) || "[]"); } catch {}
+      return send(res, 200, JSON.stringify({ messages: Array.isArray(arr) ? arr : [] }), { "content-type": "application/json" });
+    }
+    if (req.method === "POST") {
+      const chunks = []; for await (const c of req) chunks.push(c);
+      let body; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { return send(res, 400, '{"error":"bad json"}', { "content-type": "application/json" }); }
+      const slug = String(body.slug || ""); if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
+      const pageRaw = KV.get(slug); if (!pageRaw) return send(res, 404, '{"error":"no such page"}', { "content-type": "application/json" });
+      const key = "msg:" + slug; let arr = []; try { arr = JSON.parse(KV.get(key) || "[]"); if (!Array.isArray(arr)) arr = []; } catch {}
+      if (body.del != null) {
+        const page = JSON.parse(pageRaw); if (page.t !== body.editToken) return send(res, 403, '{"error":"forbidden"}', { "content-type": "application/json" });
+        arr = arr.filter(x => x.id !== String(body.del)); KV.set(key, JSON.stringify(arr));
+        return send(res, 200, JSON.stringify({ ok: true, messages: arr }), { "content-type": "application/json" });
+      }
+      const text = String(body.text || "").trim().slice(0, 140); if (!text) return send(res, 400, '{"error":"empty"}', { "content-type": "application/json" });
+      if (/https?:\/\/|www\./i.test(text)) return send(res, 400, '{"error":"no links allowed"}', { "content-type": "application/json" });
+      const name = String(body.name || "").trim().slice(0, 24) || "anon";
+      const c = "abcdefghijkmnpqrstuvwxyz23456789", b = new Uint8Array(6); crypto.getRandomValues(b); let mid = ""; for (const x of b) mid += c[x % c.length];
+      const msg = { id: mid, n: name, t: text }; arr.unshift(msg); if (arr.length > 100) arr = arr.slice(0, 100);
+      KV.set(key, JSON.stringify(arr));
+      return send(res, 200, JSON.stringify({ ok: true, message: msg }), { "content-type": "application/json" });
+    }
+  }
+
   if (path === "/api/get" && req.method === "GET") {
     const slug = new URL(req.url, "http://localhost").searchParams.get("slug") || "";
     if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
