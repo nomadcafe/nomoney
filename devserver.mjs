@@ -3,13 +3,13 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
+import { RESERVED } from "./functions/_reserved.js";
 
 const ROOT = process.cwd();
 const PORT = 8766;
 const KV = new Map(); // slug -> jsonStr ;  "img:"+slug -> Buffer(png)
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".json": "application/json" };
 const SUFFIX_CHARS = "abcdefghijkmnpqrstuvwxyz23456789";
-const RESERVED = new Set(["create", "index", "p", "s", "og", "api", "assets", "about", "terms", "privacy", "robots", "sitemap", "favicon", "admin", "static", "public", "new", "edit", "settings", "help", "login", "signup", "you", "www", "app", "blog", "docs"]);
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
 
 const cleanHandle = h => String(h || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30).replace(/-+$/, "");

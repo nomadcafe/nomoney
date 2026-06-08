@@ -1,11 +1,7 @@
 // GET /<handle> — vanity short link. Renders the broke page with server-injected OG tags
 // + embedded data. Falls through (next()) for static files and reserved names.
 
-const RESERVED = new Set([
-  "create", "index", "p", "s", "og", "api", "assets", "about", "terms", "privacy",
-  "robots", "sitemap", "favicon", "admin", "static", "public", "new", "edit",
-  "settings", "help", "login", "signup", "you", "www", "app", "blog", "docs",
-]);
+import { RESERVED } from "./_reserved.js";
 
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, c =>

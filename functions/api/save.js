@@ -2,17 +2,12 @@
 // Body: { data: <pageObject>, img?: "data:image/png;base64,...", meta?: { title, desc } }
 // KV layout:  slug -> JSON.stringify({ d: data, m: meta }) ;  "img:"+slug -> PNG bytes
 
+import { RESERVED } from "../_reserved.js";
+
 const SUFFIX_CHARS = "abcdefghijkmnpqrstuvwxyz23456789"; // no 0/o/1/l ambiguity
 const MAX_JSON = 8000;        // page JSON cap
 const MAX_PNG = 900_000;      // ~0.9 MB share image cap
 const MAX_HANDLE = 30;
-
-// names that must never become a vanity slug (would shadow routes/static files)
-const RESERVED = new Set([
-  "create", "index", "p", "s", "og", "api", "assets", "about", "terms", "privacy",
-  "robots", "sitemap", "favicon", "admin", "static", "public", "new", "edit",
-  "settings", "help", "login", "signup", "you", "www", "app", "blog", "docs",
-]);
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });

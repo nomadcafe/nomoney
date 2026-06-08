@@ -52,8 +52,8 @@
       </div>
 
       <div class="field">
-        <label for="f-handle">Your handle <span style="color:var(--ink-faint);font-family:var(--mono)">no.money/<span id="handlePrev">domain-addict</span></span></label>
-        <input type="text" id="f-handle" placeholder="domain-addict" maxlength="30" value="domain-addict" />
+        <label for="f-handle">Your handle <span style="color:var(--ink-faint);font-family:var(--mono)">no.money/<span id="handlePrev">mira</span></span></label>
+        <input type="text" id="f-handle" placeholder="your-handle" maxlength="30" value="mira" />
       </div>
 
       <div class="field">
@@ -102,20 +102,20 @@ My portfolio is strong. My fridge is empty.</textarea>
 
 <!-- result modal -->
 <div class="modal-bg" id="modal">
-  <div class="modal">
-    <h3>Your broke page is live 🎉</h3>
-    <p>No signup needed — your page is this link. Copy it, or grab the share image below.</p>
-    <div class="link-row" style="margin-bottom:16px">
-      <input type="text" id="resultUrl" readonly style="flex:1" />
-      <button class="btn btn-primary" id="copyResult" style="flex:0 0 auto">Copy</button>
+  <div class="modal modal-live">
+    <button class="modal-x" id="closeModal" aria-label="Close">×</button>
+    <div class="live-badge">💸 You're officially broke</div>
+    <h3>Your page is live 🎉</h3>
+    <div class="result-url">
+      <input type="text" id="resultUrl" readonly aria-label="Your page link" />
+      <button class="btn btn-primary" id="copyResult">Copy link</button>
     </div>
     <canvas id="shareCanvas"></canvas>
-    <div class="share-label">Share it (the image does the begging)</div>
+    <div class="share-label">Share it — the image does the begging</div>
     <div class="share-row" id="shareRow"></div>
     <div class="modal-actions">
-      <a class="btn btn-primary" id="openPage" target="_blank" rel="noopener">Open my page ↗</a>
-      <button class="btn btn-ghost" id="downloadBtn">⬇ Download share image</button>
-      <button class="btn btn-ghost" id="closeModal">Close</button>
+      <a class="btn btn-ghost btn-block" id="openPage" target="_blank" rel="noopener">Open my page ↗</a>
+      <button class="btn btn-ghost btn-block" id="downloadBtn">⬇ Download image</button>
     </div>
   </div>
 </div>
@@ -127,7 +127,10 @@ My portfolio is strong. My fridge is empty.</textarea>
 const $ = s => document.querySelector(s);
 let status = "domain";
 let storyTouched = false; // becomes true once the user types their own story — then we never auto-overwrite it
+let handleTouched = false; // once the user edits the handle, stop auto-deriving it from the name
 let emoji = "";           // custom avatar emoji; "" = use the broke status' default
+
+const slugify = s => (s || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
 
 const EMOJIS = ["", "😭", "🥲", "😅", "💀", "🤡", "🐀", "☕", "🍜", "💸", "📉", "🚀", "🎓"];
 function buildEmoji() {
@@ -296,18 +299,26 @@ $("#aiBtn").onclick = (e) => {
 };
 
 $("#f-story").addEventListener("input", () => { storyTouched = true; render(); });
-["#f-name", "#f-handle", "#f-goal", "#f-raised"].forEach(s => {
-  $(s).addEventListener("input", render);
+$("#f-name").addEventListener("input", () => {
+  if (!handleTouched) $("#f-handle").value = slugify($("#f-name").value); // handle follows the name until edited
+  render();
 });
+$("#f-handle").addEventListener("input", () => { handleTouched = true; render(); });
+["#f-goal", "#f-raised"].forEach(s => { $(s).addEventListener("input", render); });
 
 // 🎲 roll a fresh broke persona — lowers the blank-page barrier
 const PERSONA_EMOJIS = ["", "😭", "🥲", "💀", "🤡", "🐀", "💸", "📉"];
+const PERSONA_NAMES = ["Mira", "Kai", "Sol", "Devon", "Aria", "Remy", "Nico", "Tess", "Jules", "Ezra", "Quinn", "Ash"];
+const pick = a => a[Math.floor(Math.random() * a.length)];
 $("#surprise").onclick = () => {
-  status = NM.STATUS_ORDER[Math.floor(Math.random() * NM.STATUS_ORDER.length)];
-  const arr = AI_LINES[status] || AI_LINES.domain;
-  $("#f-story").value = arr[Math.floor(Math.random() * arr.length)];
+  status = pick(NM.STATUS_ORDER);
+  $("#f-story").value = pick(AI_LINES[status] || AI_LINES.domain);
   storyTouched = true;
-  emoji = PERSONA_EMOJIS[Math.floor(Math.random() * PERSONA_EMOJIS.length)];
+  const nm = pick(PERSONA_NAMES);
+  $("#f-name").value = nm;
+  handleTouched = false;                       // let the handle follow the new name again
+  $("#f-handle").value = slugify(nm);
+  emoji = pick(PERSONA_EMOJIS);
   buildChips(); buildEmoji(); render();
   toast("🎲 Rolled a fresh broke persona");
 };
