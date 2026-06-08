@@ -1,13 +1,17 @@
-// POST /api/save — store a broke page + its share image under a vanity slug (no.money/<handle>).
-// Body: { data: <pageObject>, img?: "data:image/png;base64,...", meta?: { title, desc } }
-// KV layout:  slug -> JSON.stringify({ d: data, m: meta }) ;  "img:"+slug -> PNG bytes
+// POST /api/save — create OR edit a broke page + its share image.
+// Create body: { data, img?, meta? } -> derives a vanity slug, returns { slug, editToken }.
+// Edit body:   { data, img?, meta?, slug, editToken } -> overwrites that slug if the token matches.
+// KV layout:  slug -> JSON.stringify({ d: data, m: meta, t: editToken }) ;  "img:"+slug -> PNG bytes
+// The editToken is never exposed by the public GET routes — only returned here to the creator.
 
 import { RESERVED } from "../_reserved.js";
 
 const SUFFIX_CHARS = "abcdefghijkmnpqrstuvwxyz23456789"; // no 0/o/1/l ambiguity
+const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 const MAX_JSON = 8000;        // page JSON cap
 const MAX_PNG = 900_000;      // ~0.9 MB share image cap
 const MAX_HANDLE = 30;
+const SLUG_RE = /^[a-z0-9-]{2,40}$/;
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -21,13 +25,15 @@ function cleanHandle(h) {
     .replace(/-+$/, "");
 }
 
-function suffix(n) {
+function randStr(chars, n) {
   const buf = new Uint8Array(n);
   crypto.getRandomValues(buf);
   let s = "";
-  for (let i = 0; i < n; i++) s += SUFFIX_CHARS[buf[i] % SUFFIX_CHARS.length];
+  for (let i = 0; i < n; i++) s += chars[buf[i] % chars.length];
   return s;
 }
+const suffix = n => randStr(SUFFIX_CHARS, n);
+const newToken = () => randStr(TOKEN_CHARS, 24); // ~124 bits, unguessable
 
 export async function onRequestPost({ request, env }) {
   if (!env.PAGES) return json({ error: "storage not configured" }, 500);
@@ -50,27 +56,40 @@ export async function onRequestPost({ request, env }) {
     } catch { png = null; }
   }
 
-  // vanity slug from the handle; append a short suffix if reserved or taken
-  let root = cleanHandle(data.handle);
-  if (root.length < 2) root = "broke";
+  let slug, token;
 
-  const taken = async (s) => RESERVED.has(s) || !!(await env.PAGES.get(s));
-  let slug = root;
-  if (await taken(slug)) {
-    for (let i = 0; i < 8; i++) {
-      slug = `${root}-${suffix(i < 4 ? 3 : 5)}`;
-      if (!(await taken(slug))) break;
+  if (body.slug && body.editToken) {
+    // EDIT mode — keep the same slug; require a matching token
+    if (!SLUG_RE.test(body.slug)) return json({ error: "bad slug" }, 400);
+    const existing = await env.PAGES.get(body.slug);
+    if (!existing) return json({ error: "not found" }, 404);
+    let prev; try { prev = JSON.parse(existing); } catch { prev = null; }
+    if (!prev || prev.t !== body.editToken) return json({ error: "forbidden" }, 403);
+    slug = body.slug;
+    token = prev.t;            // keep the original token
+  } else {
+    // CREATE mode — vanity slug from the handle; suffix if reserved or taken
+    let root = cleanHandle(data.handle);
+    if (root.length < 2) root = "broke";
+    const taken = async (s) => RESERVED.has(s) || !!(await env.PAGES.get(s));
+    slug = root;
+    if (await taken(slug)) {
+      for (let i = 0; i < 8; i++) {
+        slug = `${root}-${suffix(i < 4 ? 3 : 5)}`;
+        if (!(await taken(slug))) break;
+      }
     }
+    token = newToken();
   }
 
-  // make the handle shown on the page match the real URL (it may have gained a -suffix)
+  // the handle shown on the page always matches the real URL (slug)
   data.handle = slug;
 
-  const jsonStr = JSON.stringify({ d: data, m: (body.meta && typeof body.meta === "object") ? body.meta : {} });
+  const jsonStr = JSON.stringify({ d: data, m: (body.meta && typeof body.meta === "object") ? body.meta : {}, t: token });
   if (jsonStr.length > MAX_JSON) return json({ error: "too large" }, 413);
 
   await env.PAGES.put(slug, jsonStr);
   if (png) await env.PAGES.put("img:" + slug, png);
 
-  return json({ slug });
+  return json({ slug, editToken: token });
 }

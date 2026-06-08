@@ -14,6 +14,7 @@ const SLUG_RE = /^[a-z0-9-]{2,40}$/;
 
 const cleanHandle = h => String(h || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30).replace(/-+$/, "");
 const suffix = n => { let s = ""; const b = new Uint8Array(n); crypto.getRandomValues(b); for (const x of b) s += SUFFIX_CHARS[x % SUFFIX_CHARS.length]; return s; };
+const newToken = () => { let s = ""; const c = "abcdefghijklmnopqrstuvwxyz0123456789", b = new Uint8Array(24); crypto.getRandomValues(b); for (const x of b) s += c[x % c.length]; return s; };
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const send = (res, status, body, headers = {}) => { res.writeHead(status, headers); res.end(body); };
 
@@ -37,15 +38,31 @@ createServer(async (req, res) => {
     let body; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { return send(res, 400, '{"error":"bad json"}', { "content-type": "application/json" }); }
     const data = body && body.data;
     if (!data || typeof data !== "object" || Array.isArray(data)) return send(res, 400, '{"error":"no data"}', { "content-type": "application/json" });
-    let root = cleanHandle(data.handle); if (root.length < 2) root = "broke";
-    const taken = s => RESERVED.has(s) || KV.has(s);
-    let slug = root;
-    if (taken(slug)) { for (let i = 0; i < 8; i++) { slug = `${root}-${suffix(i < 4 ? 3 : 5)}`; if (!taken(slug)) break; } }
+    let slug, token;
+    if (body.slug && body.editToken) {
+      if (!SLUG_RE.test(body.slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
+      const existing = KV.get(body.slug); if (!existing) return send(res, 404, '{"error":"not found"}', { "content-type": "application/json" });
+      const prev = JSON.parse(existing); if (prev.t !== body.editToken) return send(res, 403, '{"error":"forbidden"}', { "content-type": "application/json" });
+      slug = body.slug; token = prev.t;
+    } else {
+      let root = cleanHandle(data.handle); if (root.length < 2) root = "broke";
+      const taken = s => RESERVED.has(s) || KV.has(s);
+      slug = root;
+      if (taken(slug)) { for (let i = 0; i < 8; i++) { slug = `${root}-${suffix(i < 4 ? 3 : 5)}`; if (!taken(slug)) break; } }
+      token = newToken();
+    }
     data.handle = slug; // keep the displayed handle == the real URL
-    KV.set(slug, JSON.stringify({ d: data, m: body.meta || {} }));
+    KV.set(slug, JSON.stringify({ d: data, m: body.meta || {}, t: token }));
     const PRE = "data:image/png;base64,";
     if (typeof body.img === "string" && body.img.startsWith(PRE)) KV.set("img:" + slug, Buffer.from(body.img.slice(PRE.length), "base64"));
-    return send(res, 200, JSON.stringify({ slug }), { "content-type": "application/json" });
+    return send(res, 200, JSON.stringify({ slug, editToken: token }), { "content-type": "application/json" });
+  }
+
+  if (path === "/api/get" && req.method === "GET") {
+    const slug = new URL(req.url, "http://localhost").searchParams.get("slug") || "";
+    if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
+    const raw = KV.get(slug); if (!raw) return send(res, 404, '{"error":"not found"}', { "content-type": "application/json" });
+    return send(res, 200, JSON.stringify({ data: JSON.parse(raw).d || null }), { "content-type": "application/json" });
   }
 
   if ((m = path.match(/^\/og\/([a-z0-9-]{2,40})$/)) && req.method === "GET") {

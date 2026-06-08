@@ -54,6 +54,7 @@
       <div class="field">
         <label for="f-handle">Your handle <span style="color:var(--ink-faint);font-family:var(--mono)">no.money/<span id="handlePrev">mira</span></span></label>
         <input type="text" id="f-handle" placeholder="your-handle" maxlength="30" value="mira" />
+        <div class="hint" id="editNote" style="display:none">Editing — the URL stays the same.</div>
       </div>
 
       <div class="field">
@@ -117,6 +118,7 @@ My portfolio is strong. My fridge is empty.</textarea>
       <a class="btn btn-ghost btn-block" id="openPage" target="_blank" rel="noopener">Open my page ↗</a>
       <button class="btn btn-ghost btn-block" id="downloadBtn">⬇ Download image</button>
     </div>
+    <p class="edit-hint">🔒 <a id="editLink">Private link to edit this page later</a> — anyone with it can edit, keep it to yourself.</p>
   </div>
 </div>
 
@@ -129,6 +131,8 @@ let status = "domain";
 let storyTouched = false; // becomes true once the user types their own story — then we never auto-overwrite it
 let handleTouched = false; // once the user edits the handle, stop auto-deriving it from the name
 let emoji = "";           // custom avatar emoji; "" = use the broke status' default
+let editingSlug = null;   // when set, publishing UPDATES this slug instead of creating a new page
+let editToken = null;     // capability token proving edit rights for editingSlug
 
 const slugify = s => (s || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
 
@@ -183,6 +187,7 @@ const aiIdx = {};
 
 function buildChips() {
   const c = $("#chips");
+  c.innerHTML = "";   // clear first — buildChips is called again on Surprise / edit-load
   NM.STATUS_ORDER.forEach(k => {
     const st = NM.STATUSES[k];
     const b = document.createElement("button");
@@ -375,28 +380,71 @@ async function publish() {
 
   NM.drawShareImage($("#shareCanvas"), data);
 
-  // mint a short link with a stored OG image
+  // create a new page, or UPDATE the one we're editing
+  const editing = !!(editingSlug && editToken);
   const btn = $("#publish"), prev = btn.textContent;
-  btn.textContent = "Publishing…"; btn.disabled = true;
-  let url = null;
+  btn.textContent = editing ? "Updating…" : "Publishing…"; btn.disabled = true;
+  let result = null;
   try {
     const img = $("#shareCanvas").toDataURL("image/png");
     const meta = { title: `${data.name} is ${NM.brokeScore(data).score}% broke · No Money`, desc: NM.shareText(data) };
+    const payload = { data, img, meta };
+    if (editing) { payload.slug = editingSlug; payload.editToken = editToken; }
     const res = await fetch(base + "api/save", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ data, img, meta }),
+      body: JSON.stringify(payload),
     });
-    if (res.ok) { const j = await res.json(); if (j && j.slug) url = location.origin + base + j.slug; }
+    if (res.ok) result = await res.json();
+    else if (res.status === 403) toast("This edit link is invalid — can't update");
   } catch (e) { /* handled below */ }
   btn.textContent = prev; btn.disabled = false; publishing = false;
 
-  if (!url) { toast("Couldn't publish — check your connection and try again"); return; }
+  if (!result || !result.slug) { if (!editing) toast("Couldn't publish — check your connection and try again"); return; }
 
+  const url = location.origin + base + result.slug;
+  // remember edit rights + switch into edit mode so further saves update the same page
+  if (result.editToken) {
+    try { localStorage.setItem("nm:edit:" + result.slug, result.editToken); } catch (e) {}
+    $("#editLink").href = location.origin + base + "create.html?edit=" + result.slug + "&t=" + encodeURIComponent(result.editToken);
+    enterEditMode(result.slug, result.editToken);
+  }
+
+  $(".live-badge").textContent = editing ? "✅ Updated" : "💸 You're officially broke";
+  document.querySelector(".modal-live h3").textContent = editing ? "Your page is updated 🎉" : "Your page is live 🎉";
   $("#resultUrl").value = url;
   $("#openPage").href = url;
   NM.renderShareRow($("#shareRow"), url, data);
   $("#modal").classList.add("open");
   if (!data.links.length) toast("Tip: add a support link so people can actually tip you 💸");
+}
+
+// switch the editor into "update this page" mode (after creating, or when opened via an edit link)
+function enterEditMode(slug, token) {
+  editingSlug = slug; editToken = token;
+  const h = $("#f-handle"); h.value = slug; h.readOnly = true; handleTouched = true;
+  $("#editNote").style.display = "";
+  $("#publish").textContent = "Update my page →";
+  document.querySelector(".create-head h1").textContent = "Edit your page";
+}
+
+// load an existing page into the editor (opened via ?edit=<slug>&t=<token>)
+async function loadForEdit(slug, t) {
+  let d = null;
+  try { const res = await fetch(base + "api/get?slug=" + encodeURIComponent(slug)); if (res.ok) d = (await res.json()).data; } catch (e) {}
+  if (!d) { toast("Couldn't load that page"); return; }
+  $("#f-name").value = d.name || "";
+  $("#f-handle").value = d.handle || slug;
+  $("#f-story").value = d.story || "";
+  $("#f-goal").value = d.goal != null ? d.goal : "";
+  $("#f-raised").value = d.raised != null ? d.raised : "";
+  if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
+  emoji = typeof d.emoji === "string" ? d.emoji : "";
+  if (Array.isArray(d.links) && d.links.length) links = d.links.map(l => ({ kind: l.kind || "custom", url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
+  storyTouched = true;
+  let token = t; try { token = token || localStorage.getItem("nm:edit:" + slug); } catch (e) {}
+  enterEditMode(slug, token);
+  if (!token) toast("No edit access on this device — changes won't save");
+  buildChips(); buildEmoji(); buildLinks(); render();
 }
 $("#publish").onclick = publish;
 $("#publishTop").onclick = (e) => { e.preventDefault(); publish(); };
@@ -413,17 +461,21 @@ $("#downloadBtn").onclick = () => {
   a.click();
 };
 
-// init: ?status= (themed fresh start from a "Make mine" CTA) wins; otherwise restore the saved draft
+// init: ?edit=<slug> loads a page for editing; else ?status= themed fresh start; else restore draft
 (function init() {
-  const s = new URLSearchParams(location.search).get("status");
-  if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) {
-    status = s; $("#f-story").value = NM.STATUSES[s].story;
-  } else {
-    restoreDraft();
+  const qp = new URLSearchParams(location.search);
+  const editSlug = qp.get("edit");
+  if (!editSlug) {
+    const s = qp.get("status");
+    if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) {
+      status = s; $("#f-story").value = NM.STATUSES[s].story;
+    } else {
+      restoreDraft();
+    }
   }
+  buildChips(); buildEmoji(); buildLinks(); render();   // render defaults/draft first (no blank flash)
+  if (editSlug && /^[a-z0-9-]{2,40}$/.test(editSlug)) loadForEdit(editSlug, qp.get("t")); // then override async
 })();
-
-buildChips(); buildEmoji(); buildLinks(); render();
 </script>
 </body>
 </html>
