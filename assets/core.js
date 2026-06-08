@@ -12,6 +12,7 @@ const STATUSES = {
     risk: "May eat the same flavor 9 days straight",
     zh: { label: "泡面模式", tagline: "应急基金花在了不应急的地方。", story: "我把应急基金花在了根本不算应急的东西上。\n现在靠泡面续命。求支援（或者一包调料）。", risk: "可能连吃同一种口味九天" },
     msgs: [["Stay strong, soup soldier.", "anon"], ["Adding an egg = luxury. Treat yourself.", "kev"]],
+    zhmsgs: [["撑住，泡面战士。", "anon"], ["加个蛋 = 奢侈，宠宠自己。", "kev"]],
   },
   rent: {
     label: "Rent Panic", emoji: "🏚️", accent: "#ff5468", base: 84, theme: "dark",
@@ -20,6 +21,7 @@ const STATUSES = {
     risk: "Negotiating with a landlord and losing",
     zh: { label: "房租恐慌", tagline: "房租到期了。我的余额不同意。", story: "房租到期了，我的银行余额表示不同意。\n我正在「破产」和「睡天桥」之间艰难过渡。", risk: "正在和房东谈判，且节节败退" },
     msgs: [["The floor is technically a bed too. Hang in there.", "anon"], ["Been there. Sending vibes + $.", "mara"]],
+    zhmsgs: [["地板严格来说也算床，撑住。", "anon"], ["懂的都懂，给你打钱 + 打气。", "mara"]],
   },
   laidoff: {
     label: "Laid Off", emoji: "📦", accent: "#00d563", base: 83, theme: "clean",
@@ -28,6 +30,7 @@ const STATUSES = {
     risk: "Refreshes job boards more often than their pulse",
     zh: { label: "被裁了", tagline: "公司说「这是个艰难的决定」，我的房租表示同意。", story: "我被「优化」了。\n翻译一下：时间大把，收入为零。\n领英写着「正在找工作」，我的钱包也是。", risk: "刷招聘软件比刷自己心跳还勤" },
     msgs: [["'Open to work' but make it iconic. You got this.", "anon"], ["Severance is just a long coffee break. Hang in.", "mei"], ["Their loss, literally. Sending $.", "dev_jen"]],
+    zhmsgs: [["「正在找工作」也要找得体面，你可以的。", "anon"], ["遣散费就是一段很长的咖啡时间，挺住。", "mei"], ["是他们的损失，真的。打钱。", "dev_jen"]],
   },
   crypto: {
     label: "Crypto Damage", emoji: "📉", accent: "#ff5468", base: 81, theme: "gradient",
@@ -36,6 +39,7 @@ const STATUSES = {
     risk: "Still insists 'it'll bounce back'",
     zh: { label: "币圈重创", tagline: "我入场很早。也错得很彻底。", story: "我入场很早，也错得很彻底。\n如今靠泡面一口一口走回血路。\n这显然不构成投资建议。", risk: "还在嘴硬「它会反弹的」" },
     msgs: [["WAGMI. eventually. maybe.", "anon"], ["HODL your dignity at least.", "satoshi_lite"]],
+    zhmsgs: [["WAGMI，迟早的，也许吧。", "anon"], ["至少把尊严 HODL 住。", "satoshi_lite"]],
   },
   student: {
     label: "Student Mode", emoji: "🎓", accent: "#00d563", base: 68, theme: "mono",
@@ -44,6 +48,7 @@ const STATUSES = {
     risk: "Sustained entirely by free campus pizza events",
     zh: { label: "学生模式", tagline: "学得很努力，吃得很清淡。", story: "学得很努力，吃得很清淡。\n学费掏空了我，连做饭的心气也一起掏空。\n每杯咖啡都让我在课上多撑一会儿。", risk: "全靠蹭学校免费披萨续命" },
     msgs: [["Future you will pay it forward.", "anon"], ["Ace those finals, broke legend.", "prof_no"]],
+    zhmsgs: [["未来的你会把这份好传下去的。", "anon"], ["期末加油，破产传奇。", "prof_no"]],
   },
   startup: {
     label: "Startup Broke", emoji: "🚀", accent: "#00d563", base: 76, theme: "gradient",
@@ -52,6 +57,7 @@ const STATUSES = {
     risk: "Will pivot before paying themselves",
     zh: { label: "创业破产", tagline: "没收入、没融资、没午饭。", story: "我们没收入、没融资、还没吃午饭。\n现金跑道很短，氛围感很足。\n帮我们撑到「泡面级盈利」。", risk: "会先转型，再考虑给自己发工资" },
     msgs: [["To the moon (economy class).", "anon"], ["Default alive starts with a coffee.", "yc_reject"]],
+    zhmsgs: [["奔向月球（经济舱）。", "anon"], ["活下去，从一杯咖啡开始。", "yc_reject"]],
   },
   freelance: {
     label: "Freelancer Drought", emoji: "💼", accent: "#ff8a3d", base: 74, theme: "tint",
@@ -60,6 +66,7 @@ const STATUSES = {
     risk: "Owed money by 4 people, none replying",
     zh: { label: "自由职业旱季", tagline: "发票发了，钱没到，心碎了。", story: "发票发了，款项待付，人快碎了。\n客户说「钱马上到」。钱不会到。\n帮我撑过这个回款周期。", risk: "四个人欠我钱，零个人回我消息" },
     msgs: [["Net-30 is a personality test. You're passing.", "anon"], ["Chasing that invoice for you in spirit.", "rin"]],
+    zhmsgs: [["回款周期是场人格测试，你正在通过。", "anon"], ["精神上替你催着那张发票。", "rin"]],
   },
   pet: {
     label: "Pet's Employee", emoji: "🐱", accent: "#ff8a3d", base: 75, theme: "mono",
@@ -68,6 +75,7 @@ const STATUSES = {
     risk: "Will spend rent on a fountain the cat refuses to drink from",
     zh: { label: "给猫主子打工", tagline: "我有份工作：伺候一只不给我发工资的猫。", story: "我养的不是宠物，是一位带毛的房东。\n看病、进口猫粮、四十块的玩具——它只玩盒子。\n我现在是这儿的打工人，打赏都拿去进贡零食。", risk: "会拿房租给主子买它根本不喝的饮水机" },
     msgs: [["Give the tiny landlord a raise. Sending $.", "anon"], ["The box was the real gift. Stay strong.", "lee"]],
+    zhmsgs: [["给带毛的房东涨涨工资吧，打钱。", "anon"], ["盒子才是真正的礼物，撑住。", "lee"]],
   },
 };
 
@@ -77,17 +85,17 @@ const STATUS_ORDER = ["ramen", "rent", "laidoff", "crypto", "student", "startup"
    curated funny button labels — the buttons ARE part of the joke. */
 const DEMOS = {
   ramen:   { name: "Mika",  handle: "ramen",         status: "ramen",  goal: 200, raised: 74, zhcta: "🍜 给我加个蛋",
-    links: [{ kind: "ramen", url: "#", label: "🍜 Add an egg to my life" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#" }] },
+    links: [{ kind: "ramen", url: "#", label: "🍜 Add an egg to my life", zh: "🍜 给我的泡面加个蛋" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#" }] },
   rent:    { name: "Devon", handle: "rent",          status: "rent",   goal: 850, raised: 310, zhcta: "🏚️ 别让我露宿",
-    links: [{ kind: "custom", url: "#", label: "🏚️ Keep me indoors" }, { kind: "paypal", url: "#" }, { kind: "coffee", url: "#" }] },
+    links: [{ kind: "custom", url: "#", label: "🏚️ Keep me indoors", zh: "🏚️ 别让我露宿街头" }, { kind: "paypal", url: "#" }, { kind: "coffee", url: "#" }] },
   laidoff: { name: "Mira",  handle: "laidoff",      status: "laidoff", goal: 500, raised: 210, zhcta: "📦 资助我待业",
-    links: [{ kind: "custom", url: "#", label: "📦 Fund my funemployment" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Bridge me to the next offer" }] },
+    links: [{ kind: "custom", url: "#", label: "📦 Fund my funemployment", zh: "📦 赞助我的待业人生" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Bridge me to the next offer", zh: "💸 撑我到下一个 offer" }] },
   crypto:  { name: "Sol",   handle: "crypto-loss",   status: "crypto", goal: 1000, raised: 137, zhcta: "📉 资助我的回血",
-    links: [{ kind: "custom", url: "#", label: "📉 Fund my recovery arc" }, { kind: "crypto", url: "#", label: "🪙 Send a coin that won't crash" }, { kind: "paypal", url: "#" }] },
+    links: [{ kind: "custom", url: "#", label: "📉 Fund my recovery arc", zh: "📉 资助我回血" }, { kind: "crypto", url: "#", label: "🪙 Send a coin that won't crash", zh: "🪙 给我个不会崩的币" }, { kind: "paypal", url: "#" }] },
   student: { name: "Aria",  handle: "student",       status: "student", goal: 300, raised: 189, zhcta: "☕ 给我的期末续命",
-    links: [{ kind: "coffee", url: "#", label: "☕ Caffeinate my finals" }, { kind: "custom", url: "#", label: "🍕 Diversify my pizza diet" }, { kind: "paypal", url: "#" }] },
+    links: [{ kind: "coffee", url: "#", label: "☕ Caffeinate my finals", zh: "☕ 给我的期末续咖啡" }, { kind: "custom", url: "#", label: "🍕 Diversify my pizza diet", zh: "🍕 让我的披萨换换口味" }, { kind: "paypal", url: "#" }] },
   pet:     { name: "Tess",  handle: "catstaff",      status: "pet",    goal: 300, raised: 96, zhcta: "🐱 给主子进贡",
-    links: [{ kind: "custom", url: "#", label: "🐱 Fund the tiny landlord" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Pay the cat's bills" }] },
+    links: [{ kind: "custom", url: "#", label: "🐱 Fund the tiny landlord", zh: "🐱 给带毛房东进贡" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Pay the cat's bills", zh: "💸 替猫主子还账单" }] },
 };
 
 const PAYMENT_KINDS = {

@@ -37,7 +37,7 @@ function render() {
 
   const links = data.links.map(l => {
     const k = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
-    const label = l.label || NM.payLabel(l.kind);
+    const label = (isZh() && l.zh) ? l.zh : (l.label || NM.payLabel(l.kind));   // demos carry zh labels; user pages keep their own
     return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener">${esc(label)}</a>`;
   }).join("");
 
@@ -93,7 +93,8 @@ async function initMessages() {
   if (isVanity) {
     try { const r = await fetch("/api/msgs?slug=" + encodeURIComponent(slug)); if (r.ok) messages = (await r.json()).messages || []; } catch (e) {}
   } else {
-    messages = (data.msgs || []).map(m => ({ n: m[1] || "anon", t: m[0] })); // demo: static, read-only
+    const seed = (isZh() && st.zhmsgs) ? st.zhmsgs : (data.msgs || []); // demo: static, read-only; localized seed in zh
+    messages = seed.map(m => ({ n: m[1] || "anon", t: m[0] }));
   }
   renderMsgSection();
 }
@@ -170,4 +171,4 @@ document.getElementById("copyBtn").onclick = async () => {
 // language toggle + re-render dynamic content on change
 const langToggle = document.getElementById("langToggle");
 if (langToggle) langToggle.onclick = () => window.I18N.setLang(isZh() ? "en" : "zh");
-window.addEventListener("langchange", () => { render(); renderMsgSection(); window.I18N.apply(); });
+window.addEventListener("langchange", () => { render(); initMessages(); window.I18N.apply(); }); // initMessages re-seeds demo msgs in the new language
