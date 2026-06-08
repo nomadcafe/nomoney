@@ -1,0 +1,15 @@
+# No Money
+
+> No Money (no.money) makes funny personal support pages for broke creators. Create a free, no-signup page when you're broke, pick a "broke status," add your tip links (PayPal, Ko-fi, Buy Me a Coffee, crypto, etc.), and share a meme-ready image with a "Broke Score." Tips go straight to the creator — No Money never handles the money. It is NOT a charity or fundraising platform.
+
+## Key facts
+- Free, no signup, no account. A page is just a shareable link (no.money/your-handle).
+- No Money never takes a cut and never touches funds — support links are external and go directly to the creator.
+- Each page has a broke "status" (Ramen Mode, Rent Panic, Domain Debt, Crypto Damage, Student Mode, etc.), a Broke Score out of 100, and a downloadable share image for social.
+- Purpose: personal support pages, creator tips, and internet jokes — not charity, not fundraising, no impersonation.
+
+## Links
+- Home: https://no.money/
+- Create a page: https://no.money/create.html
+- Examples: https://no.money/#demos
+- FAQ: https://no.money/#faq

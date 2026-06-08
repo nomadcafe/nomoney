@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Create your broke page · No Money</title>
+<meta name="description" content="Build your funny support page in 60 seconds. No signup." />
+<meta property="og:title" content="Create your broke page · No Money" />
+<meta property="og:description" content="Build a funny support page in 60 seconds. No signup." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://no.money/create.html" />
+<meta property="og:image" content="https://no.money/assets/og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://no.money/assets/og.png" />
+<link rel="canonical" href="https://no.money/create.html" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="logo" href="index.html">no<b>.</b>money</a>
+    <div class="nav-links">
+      <a href="index.html#demos">Examples</a>
+      <a class="btn btn-primary" id="publishTop">Get my page →</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="create-head">
+    <h1>Build your broke page</h1>
+    <p>No signup — it lives in a shareable link. About 60 seconds.</p>
+  </div>
+  <div class="create-layout">
+
+    <!-- form -->
+    <div class="form-col">
+      <div class="field">
+        <label for="f-name">Your name</label>
+        <input type="text" id="f-name" placeholder="e.g. Mira" maxlength="40" value="Mira" />
+      </div>
+
+      <div class="field">
+        <label for="f-handle">Your handle <span style="color:var(--ink-faint);font-family:var(--mono)">no.money/<span id="handlePrev">domain-addict</span></span></label>
+        <input type="text" id="f-handle" placeholder="domain-addict" maxlength="30" value="domain-addict" />
+      </div>
+
+      <div class="field">
+        <label>What kind of broke are you?</label>
+        <div class="status-chips" id="chips"></div>
+      </div>
+
+      <div class="field">
+        <label for="f-story">Your sob story</label>
+        <textarea id="f-story" maxlength="240" placeholder="Make it funny. Self-pity sells.">I came here to build wealth.
+Unfortunately, I discovered premium domains.
+My portfolio is strong. My fridge is empty.</textarea>
+        <button class="ai-btn" id="aiBtn" style="margin-top:10px">✨ Rewrite it funnier (AI)</button>
+        <div class="hint" style="display:flex;justify-content:space-between;gap:10px">
+          <span>Rotates curated punch-ups. Real AI rewriting is on the roadmap.</span>
+          <span class="counter" id="storyCount">0/240</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Goal &amp; progress</label>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1"><div class="money-input"><span>$</span><input type="number" id="f-goal" placeholder="500" value="500" min="0" /></div><div class="hint">survival goal</div></div>
+          <div style="flex:1"><div class="money-input"><span>$</span><input type="number" id="f-raised" placeholder="210" value="210" min="0" /></div><div class="hint">raised so far</div></div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Support links <span style="color:var(--ink-faint)">(money goes straight to you)</span></label>
+        <div id="links"></div>
+        <button class="add-link" id="addLink">+ Add support link</button>
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" id="publish">Get my broke page →</button>
+      <p class="hint" style="text-align:center">No signup. Your page lives in a shareable link.</p>
+    </div>
+
+    <!-- preview -->
+    <div class="preview-col">
+      <div class="preview-label">Live preview</div>
+      <div class="page-card" id="preview"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- result modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>Your broke page is live 🎉</h3>
+    <p>No signup needed — your page is this link. Copy it, or grab the share image below.</p>
+    <div class="link-row" style="margin-bottom:16px">
+      <input type="text" id="resultUrl" readonly style="flex:1" />
+      <button class="btn btn-primary" id="copyResult" style="flex:0 0 auto">Copy</button>
+    </div>
+    <canvas id="shareCanvas"></canvas>
+    <div class="share-label">Share it (the image does the begging)</div>
+    <div class="share-row" id="shareRow"></div>
+    <div class="modal-actions">
+      <a class="btn btn-primary" id="openPage" target="_blank" rel="noopener">Open my page ↗</a>
+      <button class="btn btn-ghost" id="downloadBtn">⬇ Download share image</button>
+      <button class="btn btn-ghost" id="closeModal">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="assets/core.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+let status = "domain";
+let storyTouched = false; // becomes true once the user types their own story — then we never auto-overwrite it
+
+const AI_LINES = {
+  domain: [
+    "I came here to build wealth.\nUnfortunately, I discovered premium domains.\nMy portfolio is strong. My fridge is empty.",
+    "Net worth: 47 domains.\nLiquid cash: a single expired coupon.\nFund my intervention.",
+    "I don't have a spending problem.\nI have a 'this name will definitely flip' problem.\nIt has not flipped.",
+  ],
+  ramen: [
+    "I spent my emergency fund on non-emergencies.\nNow I negotiate with instant noodles.\nAn egg would change everything.",
+    "Breakfast: ramen. Lunch: ramen's cousin.\nDinner: aspiration.\nHelp me afford a vegetable.",
+  ],
+  rent: [
+    "Rent is due. My bank account is in denial.\nBridging the gap between 'broke' and 'boxes by the curb'.",
+    "My landlord and I disagree on the definition of 'soon'.\nHelp me win the argument with money.",
+  ],
+  crypto: [
+    "I was early. I was also catastrophically wrong.\nFunding my recovery arc, one ramen at a time.",
+    "Bought high. Panicked. Sold low. Repeat.\nThis is not financial advice — obviously.",
+  ],
+  student: [
+    "Studying hard. Eating soft.\nTuition took my savings and my will to cook.\nCoffee keeps me conscious in lectures.",
+    "Sustained entirely by free campus pizza and spite.\nA coffee would diversify my diet.",
+  ],
+  startup: [
+    "Pre-revenue, pre-funding, pre-lunch.\nRunway: short. Vibes: immaculate.\nHelp us reach ramen profitability.",
+    "We will change the world right after we afford coffee.\nDefault alive starts with a tip.",
+  ],
+  freelance: [
+    "Invoices sent. Payments pending. Spirit broken.\n'The check is coming.' It is not coming.\nBridge me to net-30.",
+    "Owed money by four people. Replied to by zero.\nYour tip clears faster than my invoices.",
+  ],
+};
+const aiIdx = {};
+
+function buildChips() {
+  const c = $("#chips");
+  NM.STATUS_ORDER.forEach(k => {
+    const st = NM.STATUSES[k];
+    const b = document.createElement("button");
+    b.className = "chip" + (k === status ? " on" : "");
+    b.textContent = `${st.emoji} ${st.label}`;
+    b.onclick = () => {
+      status = k;
+      document.querySelectorAll(".chip").forEach(x => x.classList.remove("on"));
+      b.classList.add("on");
+      // only swap in this status' default story if the user hasn't written their own
+      if (!storyTouched) $("#f-story").value = NM.STATUSES[k].story;
+      render();
+    };
+    c.appendChild(b);
+  });
+}
+
+let links = [{ kind: "ramen", url: "" }];
+function buildLinks() {
+  const wrap = $("#links");
+  wrap.innerHTML = "";
+  links.forEach((l, i) => {
+    const kind = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
+    const defLabel = kind.label;
+    const row = document.createElement("div");
+    row.className = "link-edit";
+    const opts = Object.entries(NM.PAYMENT_KINDS).map(([k, v]) =>
+      `<option value="${k}" ${k === l.kind ? "selected" : ""}>${v.label.replace(/^[^ ]+ /, "")}</option>`).join("");
+    row.innerHTML =
+      `<div class="link-top"><select>${opts}</select><button class="link-del" title="remove">×</button></div>` +
+      `<input class="link-label" type="text" maxlength="40" placeholder="Button text — e.g. ${esc(defLabel)}" value="${esc(l.label || "")}" />` +
+      `<input class="link-url" type="text" placeholder="${esc(kind.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />`;
+    row.querySelector("select").onchange = e => { links[i].kind = e.target.value; buildLinks(); render(); };
+    row.querySelector(".link-label").oninput = e => { links[i].label = e.target.value; render(); };
+    row.querySelector(".link-url").oninput = e => { links[i].url = e.target.value; render(); };
+    row.querySelector(".link-del").onclick = () => { links.splice(i, 1); buildLinks(); render(); };
+    wrap.appendChild(row);
+  });
+}
+$("#addLink").onclick = () => { if (links.length < 5) { links.push({ kind: "custom", url: "" }); buildLinks(); render(); } else toast("Free plan: 5 links max"); };
+
+function gather() {
+  const handle = ($("#f-handle").value.trim() || "you").toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "you";
+  return {
+    name: $("#f-name").value.trim() || "Someone broke",
+    handle,
+    status,
+    story: $("#f-story").value.trim(),
+    goal: Number($("#f-goal").value) || 0,
+    raised: Number($("#f-raised").value) || 0,
+    links: links.map(l => {
+      const label = (l.label || "").trim();
+      return label ? { kind: l.kind, url: l.url, label } : { kind: l.kind, url: l.url };
+    }),
+  };
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function num(n) { return (Number(n) || 0).toLocaleString(); }
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); }
+
+function render() {
+  const data = gather();
+  $("#handlePrev").textContent = data.handle;
+  $("#storyCount").textContent = $("#f-story").value.length + "/240";
+  const st = NM.STATUSES[data.status];
+  const bs = NM.brokeScore(data);
+  const pct = NM.pctOf(data);
+  const root = document.documentElement;
+  root.style.setProperty("--accent", st.accent);
+  root.style.setProperty("--accent-soft", hexA(st.accent, 0.1));
+  root.style.setProperty("--accent-line", hexA(st.accent, 0.45));
+  root.style.setProperty("--accent-glow", hexA(st.accent, 0.18));
+
+  const linkHtml = data.links.map(l => {
+    const k = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
+    const label = (l.label && l.label.trim()) || k.label;
+    return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}">${esc(label)}</a>`;
+  }).join("");
+
+  $("#preview").className = "page-card theme-" + (st.theme || "clean");
+  $("#preview").innerHTML = `
+    <div class="avatar">${st.emoji}</div>
+    <div class="status-pill"><span class="dot"></span>${st.label}</div>
+    <div class="page-name">${esc(data.name)}</div>
+    <div class="page-handle">no.money/${esc(data.handle)}</div>
+    <div class="page-story">${esc(data.story || st.story)}</div>
+    <div class="goal-wrap">
+      <div class="goal-row"><span class="label">Goal</span><span class="pct">${pct}% less broke</span></div>
+      <div class="goal-bar"><i style="width:${pct}%"></i></div>
+      <div class="goal-sub">$${num(data.raised)} raised of $${num(data.goal)} survival fund</div>
+    </div>
+    <div class="support-btns">${linkHtml}</div>
+    <div class="broke-score">
+      <div class="bs-top"><span class="bs-label">Broke Score</span><span class="bs-num">${bs.score}<span>/100</span></span></div>
+      <div class="bs-meter"><i style="width:${bs.score}%"></i></div>
+      <div class="bs-row"><span class="k">Status</span><span class="v">${esc(bs.band)}</span></div>
+      <div class="bs-row"><span class="k">Risk level</span><span class="v">${esc(bs.risk)}</span></div>
+    </div>`;
+}
+
+$("#aiBtn").onclick = (e) => {
+  e.preventDefault();
+  const arr = AI_LINES[status] || AI_LINES.domain;
+  aiIdx[status] = ((aiIdx[status] ?? -1) + 1) % arr.length;
+  $("#f-story").value = arr[aiIdx[status]];
+  render();
+  toast("✨ Punched up");
+};
+
+$("#f-story").addEventListener("input", () => { storyTouched = true; render(); });
+["#f-name", "#f-handle", "#f-goal", "#f-raised"].forEach(s => {
+  $(s).addEventListener("input", render);
+});
+
+// turn "paypal.me/you" into "https://paypal.me/you", but leave real schemes (http:, bitcoin:) and raw crypto addresses alone
+function normUrl(u) {
+  u = (u || "").trim();
+  if (!u || /^[a-z][a-z0-9+.-]*:/i.test(u)) return u;     // already has a scheme
+  if (/^[^\s]+\.[^\s]+/.test(u)) return "https://" + u;   // looks like a bare domain/path
+  return u;                                                // raw token (e.g. wallet address)
+}
+
+// publish
+const base = location.pathname.replace(/[^/]*$/, "");  // directory, ends with "/"
+let publishing = false;
+
+async function publish() {
+  if (publishing) return;            // guard against double-clicks (both buttons)
+  publishing = true;
+  const data = gather();
+  data.links = data.links
+    .filter(l => l.url && l.url.trim())                       // don't ship dead buttons (no URL)
+    .map(l => ({ ...l, url: NM.safeUrl(normUrl(l.url)) }));   // fix missing https:// + strip unsafe schemes
+
+  NM.drawShareImage($("#shareCanvas"), data);
+
+  // mint a short link with a stored OG image
+  const btn = $("#publish"), prev = btn.textContent;
+  btn.textContent = "Publishing…"; btn.disabled = true;
+  let url = null;
+  try {
+    const img = $("#shareCanvas").toDataURL("image/png");
+    const meta = { title: `${data.name} is ${NM.brokeScore(data).score}% broke · No Money`, desc: NM.shareText(data) };
+    const res = await fetch(base + "api/save", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ data, img, meta }),
+    });
+    if (res.ok) { const j = await res.json(); if (j && j.slug) url = location.origin + base + j.slug; }
+  } catch (e) { /* handled below */ }
+  btn.textContent = prev; btn.disabled = false; publishing = false;
+
+  if (!url) { toast("Couldn't publish — check your connection and try again"); return; }
+
+  $("#resultUrl").value = url;
+  $("#openPage").href = url;
+  NM.renderShareRow($("#shareRow"), url, data);
+  $("#modal").classList.add("open");
+  if (!data.links.length) toast("Tip: add a support link so people can actually tip you 💸");
+}
+$("#publish").onclick = publish;
+$("#publishTop").onclick = (e) => { e.preventDefault(); publish(); };
+$("#closeModal").onclick = () => $("#modal").classList.remove("open");
+$("#modal").onclick = e => { if (e.target === $("#modal")) $("#modal").classList.remove("open"); };
+$("#copyResult").onclick = async () => {
+  try { await navigator.clipboard.writeText($("#resultUrl").value); toast("Link copied 🔗"); }
+  catch { $("#resultUrl").select(); toast("Press ⌘/Ctrl+C to copy"); }
+};
+$("#downloadBtn").onclick = () => {
+  const a = document.createElement("a");
+  a.download = `no-money-${gather().handle}.png`;
+  a.href = $("#shareCanvas").toDataURL("image/png");
+  a.click();
+};
+
+// prefill from ?status=<key> — themed fresh start (e.g. the "Make mine" CTA on a shared page)
+(function prefill() {
+  const s = new URLSearchParams(location.search).get("status");
+  if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) { status = s; $("#f-story").value = NM.STATUSES[s].story; }
+})();
+
+buildChips(); buildLinks(); render();
+</script>
+</body>
+</html>

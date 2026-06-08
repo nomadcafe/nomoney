@@ -1,0 +1,7 @@
+# internal planning — keep business strategy/pricing out of the public repo
+ROADMAP.md
+
+# OS / editor junk
+.DS_Store
+*.log
+node_modules/

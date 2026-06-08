@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A broke page · No Money</title>
+<meta name="description" content="Help someone become slightly less broke." />
+<meta property="og:type" content="profile" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<div class="page-shell">
+  <div class="page-card" id="card"><!-- rendered by JS --></div>
+
+  <div class="page-actions">
+    <button class="btn btn-primary" id="shareBtn">📸 Get share image</button>
+    <button class="btn btn-ghost" id="copyBtn">🔗 Copy link</button>
+  </div>
+
+  <div class="remix-cta">
+    <div class="remix-emoji">💸</div>
+    <div class="remix-text">
+      <strong>Broke too?</strong>
+      <span>Make your own broke page in 60 seconds. No signup.</span>
+    </div>
+    <a class="btn btn-primary" id="remixBtn" href="create.html">Make mine →</a>
+  </div>
+
+  <div class="page-foot">
+    <a href="create.html">made with <b>no.money</b></a>
+  </div>
+</div>
+
+<!-- share modal -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>Your share image is ready 📸</h3>
+    <p>Post it on X, Reddit or Telegram. The image does the begging for you.</p>
+    <canvas id="shareCanvas"></canvas>
+    <div class="share-row" id="shareRow"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="downloadBtn">⬇ Download image</button>
+      <button class="btn btn-ghost" id="closeModal">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="assets/core.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+let data = null;
+if (window.__PAGE__ && typeof window.__PAGE__ === "object") {
+  data = window.__PAGE__;                         // injected by the /s/:id short-link function
+} else if (params.get("demo") && NM.DEMOS[params.get("demo")]) {
+  data = { ...NM.DEMOS[params.get("demo")] };
+}
+if (!data) { location.href = "index.html"; }
+
+// fill defaults from status preset
+const st = (Object.prototype.hasOwnProperty.call(NM.STATUSES, data.status) && NM.STATUSES[data.status]) || NM.STATUSES.ramen;
+data.story = data.story || st.story;
+data.links = data.links || defaultLinks(data.status);
+data.msgs = data.msgs || st.msgs;
+
+function defaultLinks(status) {
+  const base = [{ kind: "ramen", url: "#" }, { kind: "coffee", url: "#" }];
+  if (status === "domain") base[0] = { kind: "ramen", url: "#" };
+  base.push({ kind: "paypal", url: "#" });
+  return base;
+}
+
+function render() {
+  const bs = NM.brokeScore(data);
+  const pct = NM.pctOf(data);
+  document.documentElement.style.setProperty("--accent", st.accent);
+  document.documentElement.style.setProperty("--accent-soft", hexA(st.accent, 0.1));
+  document.documentElement.style.setProperty("--accent-line", hexA(st.accent, 0.45));
+  document.documentElement.style.setProperty("--accent-glow", hexA(st.accent, 0.18));
+
+  document.title = `${data.name} is ${bs.score}% broke · No Money`;
+
+  const links = data.links.map(l => {
+    const k = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
+    const label = l.label || k.label;
+    return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener">${esc(label)}</a>`;
+  }).join("");
+
+  const msgs = (data.msgs || []).map(m =>
+    `<div class="msg">${esc(m[0])}<div class="who">— ${esc(m[1] || "anon")}</div></div>`).join("");
+
+  document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
+  document.getElementById("card").innerHTML = `
+    <div class="avatar">${st.emoji}</div>
+    <div class="status-pill"><span class="dot"></span>${st.label}</div>
+    <div class="page-name">${esc(data.name || "Someone broke")}</div>
+    <div class="page-handle">no.money/${esc(data.handle || "you")}</div>
+    <div class="page-story">${esc(data.story)}</div>
+
+    <div class="goal-wrap">
+      <div class="goal-row"><span class="label">Goal</span><span class="pct">${pct}% less broke</span></div>
+      <div class="goal-bar"><i style="width:${pct}%"></i></div>
+      <div class="goal-sub">$${num(data.raised)} raised of $${num(data.goal)} survival fund</div>
+    </div>
+
+    <div class="support-btns">${links}</div>
+
+    <div class="broke-score">
+      <div class="bs-top">
+        <span class="bs-label">Broke Score</span>
+        <span class="bs-num">${bs.score}<span>/100</span></span>
+      </div>
+      <div class="bs-meter"><i style="width:${bs.score}%"></i></div>
+      <div class="bs-row"><span class="k">Status</span><span class="v">${esc(bs.band)}</span></div>
+      <div class="bs-row"><span class="k">Risk level</span><span class="v">${esc(bs.risk)}</span></div>
+    </div>
+
+    ${msgs ? `<div class="msg-wall"><h4>Support messages</h4>${msgs}</div>` : ""}
+  `;
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function num(n) { return (Number(n) || 0).toLocaleString(); }
+function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+
+function toast(t) { const el = document.getElementById("toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); }
+
+render();
+
+// viral loop: "make mine" starts a fresh page themed to the same broke status
+document.getElementById("remixBtn").href = "create.html?status=" + encodeURIComponent(data.status || "");
+
+// share image
+const modal = document.getElementById("modal");
+document.getElementById("shareBtn").onclick = () => {
+  NM.drawShareImage(document.getElementById("shareCanvas"), data);
+  NM.renderShareRow(document.getElementById("shareRow"), location.href, data);
+  modal.classList.add("open");
+};
+document.getElementById("closeModal").onclick = () => modal.classList.remove("open");
+modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("open"); };
+document.getElementById("downloadBtn").onclick = () => {
+  const a = document.createElement("a");
+  a.download = `no-money-${data.handle || "page"}.png`;
+  a.href = document.getElementById("shareCanvas").toDataURL("image/png");
+  a.click();
+};
+document.getElementById("copyBtn").onclick = async () => {
+  try { await navigator.clipboard.writeText(location.href); toast("Link copied 🔗"); }
+  catch { toast("Copy failed — select the URL bar"); }
+};
+</script>
+</body>
+</html>
