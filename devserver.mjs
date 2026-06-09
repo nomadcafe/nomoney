@@ -159,9 +159,13 @@ createServer(async (req, res) => {
     }
   }
 
-  // static files
+  // static files — try the repo root, then public/ (Vite copies public/ to the dist
+  // root in prod; mirror that here so /sitemap.xml, /robots.txt, /assets/og.png work locally)
   let fp = path === "/" ? "/index.html" : path;
   fp = normalize(fp).replace(/^(\.\.[/\\])+/, "");
-  try { const buf = await readFile(join(ROOT, fp)); send(res, 200, buf, { "content-type": TYPES[extname(fp)] || "application/octet-stream" }); }
-  catch { send(res, 404, "not found"); }
+  try {
+    let buf;
+    try { buf = await readFile(join(ROOT, fp)); } catch { buf = await readFile(join(ROOT, "public", fp)); }
+    send(res, 200, buf, { "content-type": TYPES[extname(fp)] || "application/octet-stream" });
+  } catch { send(res, 404, "not found"); }
 }).listen(PORT, () => console.log(`dev server on http://localhost:${PORT}`));
