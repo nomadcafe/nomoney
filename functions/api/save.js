@@ -6,6 +6,7 @@
 
 import { RESERVED } from "../_reserved.js";
 import { indexEntry } from "../_page.js";
+import { sanitizeLinks } from "../_links.js";
 
 const SUFFIX_CHARS = "abcdefghijkmnpqrstuvwxyz23456789"; // no 0/o/1/l ambiguity
 const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -87,6 +88,10 @@ export async function onRequestPost({ request, env }) {
 
   // the handle shown on the page always matches the real URL (slug)
   data.handle = slug;
+
+  // clean the support links: safe schemes, ≤5, and no branded button (PayPal,
+  // Ko-fi, …) pointing off-brand — that would let a page spoof a payment provider
+  data.links = sanitizeLinks(data.links);
 
   // timestamps are server-owned (never trusted from the client). createdAt is set
   // once and preserved across edits; updatedAt moves every save.

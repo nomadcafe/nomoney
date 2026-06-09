@@ -87,6 +87,15 @@ function buildChips() {
 }
 
 let links = [{ kind: "ramen", url: "" }];
+// live-toggle the "must link to <brand>" warning under a row as the URL is typed
+function updateLinkWarn(row, l) {
+  const host = NM.brandHostFor(l.kind);
+  const bad = host && l.url && l.url.trim() && NM.brandMismatch(l.kind, l.url);
+  let el = row.querySelector(".link-warn");
+  if (bad && !el) { el = document.createElement("p"); el.className = "link-warn"; row.appendChild(el); }
+  if (bad) el.textContent = isZh() ? `这个按钮的链接必须指向 ${host}` : `This button must link to ${host}`;
+  else if (el) el.remove();
+}
 function buildLinks() {
   const wrap = $("#links");
   wrap.innerHTML = "";
@@ -97,13 +106,19 @@ function buildLinks() {
     row.className = "link-edit";
     const opts = Object.entries(NM.PAYMENT_KINDS).map(([k, v]) =>
       `<option value="${k}" ${k === l.kind ? "selected" : ""}>${(isZh() && v.zh ? v.zh : v.label).replace(/^[^ ]+ /, "")}</option>`).join("");
+    const host = NM.brandHostFor(l.kind);
+    const mism = host && l.url && l.url.trim() && NM.brandMismatch(l.kind, l.url);
+    const warn = mism
+      ? `<p class="link-warn">${isZh() ? `这个按钮的链接必须指向 ${host}` : `This button must link to ${host}`}</p>`
+      : "";
     row.innerHTML =
       `<div class="link-top"><select>${opts}</select><button class="link-del" title="remove" aria-label="Remove link">×</button></div>` +
       `<input class="link-label" type="text" maxlength="40" placeholder="${esc(t("link.btn_text_ph") + defLabel)}" value="${esc(l.label || "")}" />` +
-      `<input class="link-url" type="text" placeholder="${esc(kind.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />`;
+      `<input class="link-url" type="text" placeholder="${esc(kind.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />` +
+      warn;
     row.querySelector("select").onchange = e => { links[i].kind = e.target.value; buildLinks(); render(); };
     row.querySelector(".link-label").oninput = e => { links[i].label = e.target.value; render(); };
-    row.querySelector(".link-url").oninput = e => { links[i].url = e.target.value; render(); };
+    row.querySelector(".link-url").oninput = e => { links[i].url = e.target.value; updateLinkWarn(row, links[i]); render(); };
     row.querySelector(".link-del").onclick = () => { links.splice(i, 1); buildLinks(); render(); };
     wrap.appendChild(row);
   });
@@ -281,6 +296,16 @@ async function publish() {
   data.links = data.links
     .filter(l => l.url && l.url.trim())                       // don't ship dead buttons (no URL)
     .map(l => ({ ...l, url: NM.safeUrl(normUrl(l.url)) }));   // fix missing https:// + strip unsafe schemes
+
+  // a branded button (PayPal, Ko-fi, …) must actually link to that brand — no spoofing
+  const offBrand = data.links.find(l => NM.brandMismatch(l.kind, l.url));
+  if (offBrand) {
+    const host = NM.brandHostFor(offBrand.kind);
+    toast(isZh() ? `这个按钮的链接必须指向 ${host}` : `That button must link to ${host}`);
+    buildLinks();           // surface the inline warning on the offending row
+    publishing = false;
+    return;
+  }
 
   NM.drawShareImage($("#shareCanvas"), data);
 

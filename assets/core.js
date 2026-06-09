@@ -2,6 +2,7 @@
    Zero runtime deps. Pages are stored server-side via short links (see /functions); no signup. */
 import "./style.css"; // bundled + hashed by Vite (loaded on every page that imports core)
 import "./i18n.js";   // window.I18N (lang + t)
+import { brandMismatch, brandHostFor } from "../functions/_links.js"; // shared anti-spoof rule
 
 /* ---------------- broke statuses ---------------- */
 const STATUSES = {
@@ -324,4 +325,4 @@ function mixHex(a, b, t) {
 }
 
 /* expose */
-window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, brokeScore, pctOf, safeUrl, drawShareImage, shareText, shareIntents, renderShareRow };
+window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, brokeScore, pctOf, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow };
