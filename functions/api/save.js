@@ -106,6 +106,15 @@ export async function onRequestPost({ request, env }) {
   await env.PAGES.put(slug, jsonStr);
   if (png) await env.PAGES.put("img:" + slug, png);
 
+  // viral-loop output: count every NEW page (not edits). Cold path — creates are
+  // rare next to views, so this single global counter is fine here. Best-effort.
+  if (!isEdit) {
+    try {
+      const n = (+(await env.PAGES.get("stat:creates")) || 0) + 1;
+      await env.PAGES.put("stat:creates", String(n));
+    } catch (e) { /* counter is best-effort */ }
+  }
+
   // maintain the recent/activity index for /admin — on create AND edit, so the
   // index reflects real activity. Best-effort; admin can also rebuild from KV.
   try {

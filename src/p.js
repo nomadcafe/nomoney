@@ -154,8 +154,23 @@ async function deleteMsg(id) {
 
 initMessages();
 
+/* ---------- viral-loop instrumentation ---------- */
+// directional analytics only; the only metric the product optimizes is shareability.
+// fire-and-forget beacon so it never blocks render or the CTA's navigation.
+function hit(ev) {
+  if (!isVanity) return;               // demos have no slug — nothing to attribute
+  try {
+    const body = JSON.stringify({ slug, ev });
+    if (navigator.sendBeacon) navigator.sendBeacon("/api/hit", new Blob([body], { type: "application/json" }));
+    else fetch("/api/hit", { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => {});
+  } catch (e) {}
+}
+if (!ownerToken) hit("view");          // skip the owner's own views so they don't inflate the count
+
 // viral loop: "make mine" starts a fresh page themed to the same broke status
-document.getElementById("remixBtn").href = "create.html?status=" + encodeURIComponent(data.status || "");
+const remixBtn = document.getElementById("remixBtn");
+remixBtn.href = "create.html?status=" + encodeURIComponent(data.status || "");
+remixBtn.addEventListener("click", () => hit("cta"));
 
 // share image
 const modal = document.getElementById("modal");

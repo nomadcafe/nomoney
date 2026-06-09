@@ -24,6 +24,18 @@ async function readList(env) {
   catch { return []; }
 }
 
+// Fold the per-page viral-loop counters (stat:<slug> -> {v,c}) onto each index
+// entry so /admin can show them and sum the funnel. Reads are cheap on KV (the
+// scarce resource is writes); we parallelize and only read indexed (real) pages.
+async function attachStats(env, recent) {
+  await Promise.all(recent.map(async (r) => {
+    if (!r || !r.slug) return;
+    try { const raw = await env.PAGES.get("stat:" + r.slug); const o = raw ? JSON.parse(raw) : null; r.v = +(o && o.v) || 0; r.c = +(o && o.c) || 0; }
+    catch { r.v = 0; r.c = 0; }
+  }));
+  return recent;
+}
+
 export async function onRequestGet({ env }) {
   if (!env.PAGES) return json({ error: "storage not configured" }, 500);
   const slugs = await readList(env);
@@ -64,7 +76,10 @@ export async function onRequestPost({ request, env }) {
   if (body.list) {
     let recent = [];
     try { recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]"); } catch {}
-    return json({ featured: await readList(env), recent: Array.isArray(recent) ? recent : [] });
+    recent = Array.isArray(recent) ? recent : [];
+    await attachStats(env, recent);
+    const creates = +(await env.PAGES.get("stat:creates")) || 0;
+    return json({ featured: await readList(env), recent, creates });
   }
 
   // admin: rebuild the index by scanning every page in KV. Surfaces pages that
@@ -90,7 +105,9 @@ export async function onRequestPost({ request, env }) {
     entries.sort((a, b) => (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || ""));
     const capped = entries.slice(0, 1000);
     await env.PAGES.put("pages:recent", JSON.stringify(capped));
-    return json({ rebuilt: capped.length, featured: await readList(env), recent: capped });
+    await attachStats(env, capped);
+    const creates = +(await env.PAGES.get("stat:creates")) || 0;
+    return json({ rebuilt: capped.length, featured: await readList(env), recent: capped, creates });
   }
 
   let list = await readList(env);

@@ -60,6 +60,7 @@ createServer(async (req, res) => {
       recent = (Array.isArray(recent) ? recent : []).filter(r => r && r.slug !== slug);
       recent.unshift({ slug, name: data.name || "", status: data.status || "ramen", emoji: typeof data.emoji === "string" ? data.emoji : "" });
       KV.set("pages:recent", JSON.stringify(recent.slice(0, 100)));
+      KV.set("stat:creates", String((+KV.get("stat:creates") || 0) + 1)); // viral-loop output counter
     }
     return send(res, 200, JSON.stringify({ slug, editToken: token }), { "content-type": "application/json" });
   }
@@ -92,6 +93,16 @@ createServer(async (req, res) => {
     }
   }
 
+  if (path === "/api/hit" && req.method === "POST") {
+    const chunks = []; for await (const c of req) chunks.push(c);
+    let body; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { return send(res, 400, '{"error":"bad json"}', { "content-type": "application/json" }); }
+    const slug = String(body.slug || ""); if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
+    const field = body.ev === "view" ? "v" : body.ev === "cta" ? "c" : null; if (!field) return send(res, 400, '{"error":"bad event"}', { "content-type": "application/json" });
+    let stat = { v: 0, c: 0 }; try { const raw = KV.get("stat:" + slug); if (raw) { const o = JSON.parse(raw); stat = { v: +o.v || 0, c: +o.c || 0 }; } } catch {}
+    stat[field]++; KV.set("stat:" + slug, JSON.stringify(stat));
+    return send(res, 200, '{"ok":true}', { "content-type": "application/json" });
+  }
+
   if (path === "/api/ai" && req.method === "POST") {
     // mock (no Workers AI locally) — real model runs on Cloudflare / via `wrangler pages dev`
     return send(res, 200, JSON.stringify({ text: "I had a budget. The budget had other plans.\nNow I'm rich in regret and ramen. (mock AI)" }), { "content-type": "application/json" });
@@ -119,7 +130,12 @@ createServer(async (req, res) => {
     if (req.method === "POST") {
       let body = {}; try { body = JSON.parse(await new Promise(r => { let s = ""; req.on("data", c => s += c); req.on("end", () => r(s || "{}")); })); } catch {}
       if (body.token !== "dev") return send(res, 403, '{"error":"forbidden (dev token: dev)"}', { "content-type": "application/json" });
-      if (body.list) { let recent = []; try { recent = JSON.parse(KV.get("pages:recent") || "[]"); } catch {} return send(res, 200, JSON.stringify({ featured: readList(), recent }), { "content-type": "application/json" }); }
+      if (body.list) {
+        let recent = []; try { recent = JSON.parse(KV.get("pages:recent") || "[]"); } catch {}
+        for (const r of recent) { try { const o = JSON.parse(KV.get("stat:" + r.slug) || "null"); r.v = +(o && o.v) || 0; r.c = +(o && o.c) || 0; } catch { r.v = 0; r.c = 0; } }
+        const creates = +KV.get("stat:creates") || 0;
+        return send(res, 200, JSON.stringify({ featured: readList(), recent, creates }), { "content-type": "application/json" });
+      }
       let list = readList();
       if (Array.isArray(body.set)) list = body.set.filter(s => SLUG_RE.test(s));
       else if (body.add && SLUG_RE.test(body.add)) list = [body.add, ...list.filter(x => x !== body.add)];

@@ -25,6 +25,12 @@
   </div>
 
   <div id="adminBody" style="display:none">
+    <div class="admin-card" id="funnel" style="display:none">
+      <h2 style="margin-top:0">Viral loop</h2>
+      <div class="funnel-row" id="funnelRow"></div>
+      <p class="admin-hint" id="funnelHint"></p>
+    </div>
+
     <div class="admin-head">
       <h2>On the wall <span id="wallCount" class="admin-muted"></span></h2>
       <button class="btn btn-ghost btn-sm" id="logout">Forget token</button>
@@ -43,6 +49,7 @@
     <div class="admin-row" style="margin-bottom:12px">
       <select id="sortBy" class="admin-select">
         <option value="recent">Newest activity</option>
+        <option value="views">Most viewed</option>
         <option value="msgs">Most messages (alive)</option>
         <option value="stale">Oldest activity (dormant)</option>
         <option value="created">Newest created</option>

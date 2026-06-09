@@ -23,6 +23,7 @@ function relTime(iso) {
 }
 
 let allRecent = [];   // last loaded index
+let creates = 0;      // global pages-created counter (stat:creates)
 let onWall = new Set();
 
 async function api(body) {
@@ -44,8 +45,27 @@ async function load() {
   const featured = res.json.featured || [];
   renderFeatured(featured);
   allRecent = res.json.recent || [];
+  creates = res.json.creates || 0;
   onWall = new Set(featured);
+  renderFunnel();
   renderRecent();
+}
+
+// The headline shareability funnel: of everyone who landed on a page, how many
+// hit "Make mine" (the loop trigger), and how many pages got created overall.
+// Counts are directional (see functions/api/hit.js), not exact — read the ratio.
+function renderFunnel() {
+  const v = allRecent.reduce((s, p) => s + (p.v || 0), 0);
+  const c = allRecent.reduce((s, p) => s + (p.c || 0), 0);
+  const box = $("#funnel");
+  if (!v && !c && !creates) { box.style.display = "none"; return; }
+  box.style.display = "";
+  const rate = v ? Math.round((c / v) * 100) : 0;
+  const chip = (n, label) => `<span class="funnel-chip"><b>${n.toLocaleString()}</b><span>${label}</span></span>`;
+  $("#funnelRow").innerHTML =
+    chip(v, "page views") + chip(c, `“Make mine” clicks · ${rate}%`) + chip(creates, "pages created");
+  $("#funnelHint").textContent =
+    "Click-through = how shareable the page is. Pages created = the loop's output. Counts are directional, not exact.";
 }
 
 function renderFeatured(featured) {
@@ -71,7 +91,9 @@ function sortedFiltered() {
   let list = allRecent.slice();
   if ($("#onlyEmpty").checked) list = list.filter(p => p.empty);
   const sort = $("#sortBy").value;
-  if (sort === "msgs") {
+  if (sort === "views") {
+    list.sort((a, b) => (b.v || 0) - (a.v || 0));
+  } else if (sort === "msgs") {
     list.sort((a, b) => (b.msgs || 0) - (a.msgs || 0));
   } else {
     const key = sort === "created" ? "createdAt" : "updatedAt";
@@ -102,6 +124,8 @@ function renderRecent() {
     const edited = daysSince(p.updatedAt);
     const stale = edited != null && edited >= STALE_DAYS;
     const badges =
+      ((p.v || 0) > 0 ? `<span class="admin-tag" title="page views">👁 ${p.v}</span>` : "") +
+      ((p.c || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="“Make mine” clicks">↗ ${p.c}</span>` : "") +
       ((p.msgs || 0) > 0 ? `<span class="admin-tag admin-tag-live">💬 ${p.msgs}</span>` : "") +
       (p.empty ? `<span class="admin-tag admin-tag-warn">empty</span>` : "") +
       (stale ? `<span class="admin-tag">stale ${relTime(p.updatedAt)}</span>` : "");
@@ -174,7 +198,9 @@ $("#rebuild").onclick = async () => {
   if (res.status === 403) { showTokenBox("Token rejected"); return; }
   if (!res.ok) { toast("Rebuild failed"); return; }
   allRecent = res.json.recent || [];
+  creates = res.json.creates || 0;
   onWall = new Set(res.json.featured || []);
+  renderFunnel();
   renderRecent();
   toast(`Indexed ${res.json.rebuilt ?? allRecent.length} pages`);
 };

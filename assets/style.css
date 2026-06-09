@@ -505,6 +505,10 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .admin-tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--bg-2); color: var(--ink-dim); vertical-align: middle; }
 .admin-tag-warn { background: #ffe6c7; color: #8a4b00; }
 .admin-tag-live { background: #d6f5e3; color: #0a6b3a; }
+.funnel-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 2px; }
+.funnel-chip { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; min-width: 120px; }
+.funnel-chip b { font-family: "Space Grotesk", system-ui, sans-serif; font-size: 26px; line-height: 1; color: var(--ink); }
+.funnel-chip span { font-size: 12px; font-weight: 600; color: var(--ink-dim); }
 .admin-del:hover { border-color: #e0345a; background: #ffe9ee; }
 .admin-select { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 14px; color: var(--ink); flex: 0 0 auto; }
 .admin-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-dim); white-space: nowrap; }
