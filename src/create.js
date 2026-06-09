@@ -497,8 +497,7 @@ function showResumeBar() {
   else showResumeBar();                                  // surface an existing page to keep editing
 })();
 
-// language toggle + re-render dynamic content on switch
-$("#langToggle").onclick = () => window.I18N.cycleLang();
+// re-render dynamic content on language switch (the picker itself is wired in i18n.js)
 window.addEventListener("langchange", () => {
   if (!storyTouched && !editingSlug) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
   buildChips(); buildEmoji(); buildLinks(); render();

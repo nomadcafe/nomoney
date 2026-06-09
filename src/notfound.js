@@ -7,6 +7,4 @@ function apply() {
 }
 apply();
 
-const toggle = document.getElementById("langToggle");
-if (toggle) toggle.onclick = () => window.I18N.cycleLang();
-window.addEventListener("langchange", apply);
+window.addEventListener("langchange", apply); // language picker is wired in i18n.js

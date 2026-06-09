@@ -379,5 +379,59 @@ function setLang(l) {
 // advance to the next language in the cycle (en → es → ja → zh → en)
 function cycleLang() { setLang(LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]); }
 
+// each language's name in its own script, shown in the picker
+const NATIVE = { en: "English", es: "Español", ja: "日本語", zh: "中文" };
+
+// Upgrade the #langToggle button into a dropdown listing every language, so users
+// can see all options (not just the next one). Centralized here → every page gets it.
+function mountLangPicker() {
+  const btn = document.getElementById("langToggle");
+  if (!btn || btn.dataset.lpMounted) return;
+  btn.dataset.lpMounted = "1";
+  btn.removeAttribute("data-i18n");          // picker manages the label, not applyI18n
+  btn.setAttribute("aria-haspopup", "listbox");
+  btn.setAttribute("aria-expanded", "false");
+
+  const wrap = document.createElement("span");
+  wrap.className = "lang-picker";
+  if (btn.classList.contains("lang-fixed")) { wrap.classList.add("lang-fixed"); btn.classList.remove("lang-fixed"); }
+  btn.parentNode.insertBefore(wrap, btn);
+  wrap.appendChild(btn);
+
+  const menu = document.createElement("div");
+  menu.className = "lang-menu";
+  menu.setAttribute("role", "listbox");
+  LANGS.forEach(l => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "lang-item";
+    item.dataset.lang = l;
+    item.setAttribute("role", "option");
+    item.textContent = NATIVE[l] || l;
+    item.addEventListener("click", () => { setLang(l); close(); });
+    menu.appendChild(item);
+  });
+  wrap.appendChild(menu);
+
+  const close = () => { wrap.classList.remove("open"); btn.setAttribute("aria-expanded", "false"); };
+  const toggle = () => {
+    const open = wrap.classList.toggle("open");
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  };
+  btn.addEventListener("click", (e) => { e.stopPropagation(); toggle(); });
+  document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+
+  const refresh = () => {
+    btn.textContent = "🌐 " + (NATIVE[lang] || lang);
+    menu.querySelectorAll(".lang-item").forEach(it => it.classList.toggle("active", it.dataset.lang === lang));
+  };
+  refresh();
+  window.addEventListener("langchange", refresh);
+}
+
 document.documentElement.lang = HTML_LANG[lang] || "en";
 window.I18N = { t, get lang() { return lang; }, langs: LANGS, setLang, cycleLang, apply: applyI18n };
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountLangPicker);
+else mountLangPicker();

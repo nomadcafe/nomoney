@@ -198,7 +198,5 @@ document.getElementById("copyBtn").onclick = async () => {
   catch { toast(t("toast.copy_fail")); }
 };
 
-// language toggle + re-render dynamic content on change
-const langToggle = document.getElementById("langToggle");
-if (langToggle) langToggle.onclick = () => window.I18N.cycleLang();
+// re-render dynamic content on language change (the picker itself is wired in i18n.js)
 window.addEventListener("langchange", () => { render(); initMessages(); window.I18N.apply(); }); // initMessages re-seeds demo msgs in the new language
