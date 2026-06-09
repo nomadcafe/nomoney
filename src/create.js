@@ -201,7 +201,9 @@ function render() {
   const linkHtml = data.links.map(l => {
     const k = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
     const label = (l.label && l.label.trim()) || NM.payLabel(l.kind);
-    return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}">${esc(label)}</a>`;
+    const a = `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}">${esc(label)}</a>`;
+    const host = NM.freeFormHost(l.kind, l.url);   // preview the destination hint visitors will see
+    return host ? a + `<p class="link-host">→ ${esc(host)}</p>` : a;
   }).join("");
 
   const pctLine = isZh() ? `${t("card.lessbroke")} ${pct}%` : `${pct}% ${t("card.lessbroke")}`;

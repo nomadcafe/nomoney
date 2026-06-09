@@ -44,7 +44,10 @@ function render() {
     const label = (isZh() && l.zh) ? l.zh : (l.label || NM.payLabel(kind));   // demos carry zh labels; user pages keep their own
     // these are visitor-clickable, user-submitted outbound links: nofollow+ugc so public
     // pages can't be farmed for SEO backlinks; noreferrer hides where the tipper came from
-    return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener noreferrer nofollow ugc">${esc(label)}</a>`;
+    const a = `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener noreferrer nofollow ugc">${esc(label)}</a>`;
+    // for free-form buttons, show the real destination host so a deceptive label can't hide it
+    const host = NM.freeFormHost(kind, l.url);
+    return host ? a + `<p class="link-host">→ ${esc(host)}</p>` : a;
   }).join("");
 
   const raisedLine = isZh()

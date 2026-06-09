@@ -325,6 +325,9 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .support-btns a:hover { transform: translateY(-1px); border-color: var(--accent-line, var(--ink-faint)); }
 .support-btns a:first-child:hover { filter: brightness(1.08); border-color: transparent; }
 .support-btns a:active { transform: translateY(1px); }
+/* destination hint under a free-form button — a custom label can lie, the host can't.
+   negative top-margin pulls it up tight under its own button (vs the 10px row gap). */
+.support-btns .link-host { margin: -5px 0 0; font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint); word-break: break-all; }
 
 /* broke score widget */
 .broke-score { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 22px; }

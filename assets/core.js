@@ -195,6 +195,20 @@ function joinHandle(kind, input) {
   return handle ? "https://" + prefix + handle : "";
 }
 
+// Destination host to surface under a free-form button (custom/ramen/crypto), so a
+// deceptive custom label ("💳 PayPal" → evil.ru) can't hide where the link really goes.
+// Branded kinds are host-locked → no hint; wallet addresses / non-web schemes get none.
+function freeFormHost(kind, url) {
+  if (brandHostFor(kind)) return "";                                      // branded → locked to its host
+  const s = String(url || "").trim();
+  if (!s) return "";
+  if (/^[a-z][a-z0-9+.\-]*:/i.test(s) && !/^https?:/i.test(s)) return ""; // bitcoin:, mailto:, …
+  // the authority must literally contain a dot — guards bare tokens / hex wallet addrs
+  // that the URL parser would otherwise coerce into a numeric IP host (0x1234abcd → an IP)
+  const authority = s.replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
+  return authority.includes(".") ? urlHost(s) : "";
+}
+
 const BANDS_ZH = {
   "Financially dramatic": "财务戏精", "Critically broke": "重度破产",
   "Aggressively broke": "激进破产", "Casually broke": "轻度破产", "Suspiciously fine": "可疑地还行",
@@ -398,4 +412,4 @@ function mixHex(a, b, t) {
 }
 
 /* expose */
-window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, payPrefix, splitHandle, joinHandle, brokeScore, pctOf, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow };
+window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, payPrefix, splitHandle, joinHandle, freeFormHost, brokeScore, pctOf, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow };
