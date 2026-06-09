@@ -96,6 +96,23 @@ export async function onRequestPost({ request, env }) {
   let list = await readList(env);
   const clean = s => (typeof s === "string" && SLUG_RE.test(s)) ? s : null;
 
+  // admin: permanently delete a page and everything attached to it (violations,
+  // dead shells). Irreversible — the slug becomes free to register again.
+  if (body.delete) {
+    const s = clean(body.delete);
+    if (!s) return json({ error: "bad slug" }, 400);
+    await env.PAGES.delete(s);             // the page itself
+    await env.PAGES.delete("img:" + s);    // its share image
+    await env.PAGES.delete("msg:" + s);    // its support messages
+    try {                                  // drop from the activity index
+      const recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]");
+      if (Array.isArray(recent)) await env.PAGES.put("pages:recent", JSON.stringify(recent.filter(r => r && r.slug !== s)));
+    } catch {}
+    list = list.filter(x => x !== s);      // and from the featured wall if present
+    await env.PAGES.put(KEY, JSON.stringify(list));
+    return json({ deleted: s, featured: list });
+  }
+
   if (Array.isArray(body.set)) {
     list = body.set.map(clean).filter(Boolean);
   } else if (body.add) {

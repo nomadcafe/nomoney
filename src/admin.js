@@ -118,10 +118,21 @@ function renderRecent() {
       <span class="admin-acts">
         <a class="btn btn-ghost btn-sm" href="/${esc(p.slug)}" target="_blank" rel="noopener" title="open">↗</a>
         ${onWall.has(p.slug) ? `<button class="btn btn-ghost btn-sm" disabled>On wall ✓</button>` : `<button class="btn btn-primary btn-sm" data-add="${esc(p.slug)}">Add</button>`}
+        <button class="btn btn-ghost btn-sm admin-del" data-del="${esc(p.slug)}" title="delete page permanently">🗑</button>
       </span>
     </div>`;
   }).join("");
   el.querySelectorAll("[data-add]").forEach(b => b.onclick = () => act({ add: b.dataset.add }));
+  el.querySelectorAll("[data-del]").forEach(b => b.onclick = () => del(b.dataset.del));
+}
+
+async function del(slug) {
+  if (!confirm(`Permanently delete no.money/${slug}?\n\nThis removes the page, its share image and all messages. It cannot be undone, and old shared links will 404.`)) return;
+  const res = await api({ delete: slug });
+  if (res.status === 403) { showTokenBox("Token rejected"); return; }
+  if (!res.ok) { toast("Delete failed"); return; }
+  toast(`Deleted ${slug}`);
+  load();
 }
 
 async function act(body) {
