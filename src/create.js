@@ -100,25 +100,62 @@ function buildLinks() {
   const wrap = $("#links");
   wrap.innerHTML = "";
   links.forEach((l, i) => {
-    const kind = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
+    const kindMeta = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
     const defLabel = NM.payLabel(l.kind);
+    const sp = NM.splitHandle(l.kind, l.url || "");   // {mode:"handle"|"full", value}
+    const prefix = NM.payPrefix(l.kind);
     const row = document.createElement("div");
     row.className = "link-edit";
     const opts = Object.entries(NM.PAYMENT_KINDS).map(([k, v]) =>
       `<option value="${k}" ${k === l.kind ? "selected" : ""}>${(isZh() && v.zh ? v.zh : v.label).replace(/^[^ ]+ /, "")}</option>`).join("");
+
+    let urlField;
+    if (sp.mode === "handle") {
+      // ask for the handle only; the prefix is shown as a fixed adornment
+      const exHandle = NM.splitHandle(l.kind, kindMeta.ex || "").value || "you";
+      urlField =
+        `<div class="link-handle"><span class="link-prefix">${esc(prefix)}</span>` +
+        `<input class="link-url" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="${esc(exHandle)}" value="${esc(sp.value)}" /></div>`;
+    } else {
+      urlField = `<input class="link-url" type="text" placeholder="${esc(kindMeta.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />`;
+    }
+
+    // a branded full-URL must match its brand; handle mode can't mismatch (we build the URL)
     const host = NM.brandHostFor(l.kind);
-    const mism = host && l.url && l.url.trim() && NM.brandMismatch(l.kind, l.url);
+    const mism = sp.mode === "full" && host && l.url && l.url.trim() && NM.brandMismatch(l.kind, l.url);
     const warn = mism
       ? `<p class="link-warn">${isZh() ? `这个按钮的链接必须指向 ${host}` : `This button must link to ${host}`}</p>`
       : "";
+
     row.innerHTML =
       `<div class="link-top"><select>${opts}</select><button class="link-del" title="remove" aria-label="Remove link">×</button></div>` +
       `<input class="link-label" type="text" maxlength="40" placeholder="${esc(t("link.btn_text_ph") + defLabel)}" value="${esc(l.label || "")}" />` +
-      `<input class="link-url" type="text" placeholder="${esc(kind.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />` +
-      warn;
-    row.querySelector("select").onchange = e => { links[i].kind = e.target.value; buildLinks(); render(); };
+      urlField + warn;
+
+    row.querySelector("select").onchange = e => {
+      const newKind = e.target.value;
+      const prev = NM.splitHandle(l.kind, links[i].url || "");
+      links[i].kind = newKind;
+      // carry a plain handle across handle-kinds (coffee/you → kofi/you); drop a now-off-brand URL
+      if (NM.payPrefix(newKind)) {
+        if (prev.mode === "handle" && prev.value) links[i].url = NM.joinHandle(newKind, prev.value);
+        else if (prev.mode === "full" && NM.brandMismatch(newKind, links[i].url)) links[i].url = "";
+      }
+      buildLinks(); render();
+    };
     row.querySelector(".link-label").oninput = e => { links[i].label = e.target.value; render(); };
-    row.querySelector(".link-url").oninput = e => { links[i].url = e.target.value; updateLinkWarn(row, links[i]); render(); };
+    const urlInput = row.querySelector(".link-url");
+    urlInput.oninput = e => {
+      if (sp.mode === "handle") {
+        links[i].url = NM.joinHandle(l.kind, e.target.value);
+        // pasting a full alternate-host link (paypal.com/…) flips this row to a URL field
+        if (NM.splitHandle(l.kind, links[i].url).mode === "full") buildLinks();
+      } else {
+        links[i].url = e.target.value;
+        updateLinkWarn(row, links[i]);
+      }
+      render();
+    };
     row.querySelector(".link-del").onclick = () => { links.splice(i, 1); buildLinks(); render(); };
     wrap.appendChild(row);
   });

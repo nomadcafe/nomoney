@@ -419,6 +419,12 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .link-edit input { width: 100%; }
 .link-edit .link-warn { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--red); }
 .link-edit:has(.link-warn) { border-color: var(--red); }
+/* handle-only input: a fixed "buymeacoffee.com/" prefix + a borderless handle field, styled as one box */
+.link-edit .link-handle { display: flex; align-items: stretch; background: #fff; border: 1px solid var(--line); border-radius: 11px; overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
+.link-edit .link-handle:focus-within { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,194,90,0.14); }
+.link-edit .link-prefix { flex: 0 0 auto; display: flex; align-items: center; padding: 0 1px 0 14px; color: var(--ink-faint); font-size: 15px; white-space: nowrap; user-select: none; }
+.link-edit .link-handle .link-url { flex: 1; min-width: 0; border: none; background: transparent; border-radius: 0; padding-left: 0; }
+.link-edit .link-handle .link-url:focus { border: none; box-shadow: none; }
 
 .counter { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); flex: 0 0 auto; }
 

@@ -4,7 +4,7 @@
 // A "branded" kind renders a specific company's name + styling (e.g. "☕ Buy Me a
 // Coffee"). If we let the URL point anywhere, the button lies about where it goes —
 // a phishing vector. So branded kinds must link to that brand's own hosts. Generic
-// kinds (ramen/coffee/custom) and non-URL kinds (crypto wallet) stay free-form.
+// kinds (ramen/custom) and non-URL kinds (crypto wallet) stay free-form.
 
 export const KNOWN_KINDS = ["ramen", "coffee", "paypal", "venmo", "cashapp", "kofi", "patreon", "ghspon", "stripe", "crypto", "wise", "revolut", "monzo", "alipay", "custom"];
 
@@ -12,6 +12,7 @@ export const KNOWN_KINDS = ["ramen", "coffee", "paypal", "venmo", "cashapp", "ko
 const KIND_ALIAS = { bmc: "coffee" };
 
 export const BRAND_HOSTS = {
+  coffee:  ["buymeacoffee.com"],    // "☕ Buy Me a Coffee" button must link there
   paypal:  ["paypal.me", "paypal.com"],
   venmo:   ["venmo.com"],
   cashapp: ["cash.app"],

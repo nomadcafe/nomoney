@@ -99,20 +99,23 @@ const DEMOS = {
     links: [{ kind: "custom", url: "#", label: "🐱 Fund the tiny landlord", zh: "🐱 给带毛房东进贡" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Pay the cat's bills", zh: "💸 替猫主子还账单" }] },
 };
 
+// `prefix` marks a kind whose URL is just "<prefix><handle>", so the create form can ask
+// for the handle alone (see splitHandle/joinHandle). Each prefix host MUST be listed in
+// BRAND_HOSTS (functions/_links.js) so the URL we build passes the anti-spoof check.
 const PAYMENT_KINDS = {
   ramen:   { label: "🍜 Buy me ramen",        zh: "🍜 请我吃泡面",      cls: "",    ex: "https://your-tip-link.com" },
-  coffee:  { label: "☕ Send emergency coffee", zh: "☕ 来杯救命咖啡",    cls: "alt", ex: "https://buymeacoffee.com/you" },
-  paypal:  { label: "💸 PayPal me",            zh: "💸 用 PayPal 打赏",  cls: "alt", ex: "https://paypal.me/you" },
-  venmo:   { label: "📲 Venmo",                zh: "📲 Venmo",           cls: "alt", ex: "https://venmo.com/u/you" },
-  cashapp: { label: "💵 Cash App",             zh: "💵 Cash App",        cls: "alt", ex: "https://cash.app/$you" },
-  kofi:    { label: "❤️ Ko-fi",                zh: "❤️ Ko-fi",           cls: "alt", ex: "https://ko-fi.com/you" },
-  patreon: { label: "🧡 Patreon",              zh: "🧡 Patreon",         cls: "alt", ex: "https://patreon.com/you" },
-  ghspon:  { label: "💖 GitHub Sponsors",      zh: "💖 GitHub 赞助",     cls: "alt", ex: "https://github.com/sponsors/you" },
+  coffee:  { label: "☕ Send emergency coffee", zh: "☕ 来杯救命咖啡",    cls: "alt", prefix: "buymeacoffee.com/",   ex: "https://buymeacoffee.com/you" },
+  paypal:  { label: "💸 PayPal me",            zh: "💸 用 PayPal 打赏",  cls: "alt", prefix: "paypal.me/",          ex: "https://paypal.me/you" },
+  venmo:   { label: "📲 Venmo",                zh: "📲 Venmo",           cls: "alt", prefix: "venmo.com/u/",        ex: "https://venmo.com/u/you" },
+  cashapp: { label: "💵 Cash App",             zh: "💵 Cash App",        cls: "alt", prefix: "cash.app/$",          ex: "https://cash.app/$you" },
+  kofi:    { label: "❤️ Ko-fi",                zh: "❤️ Ko-fi",           cls: "alt", prefix: "ko-fi.com/",          ex: "https://ko-fi.com/you" },
+  patreon: { label: "🧡 Patreon",              zh: "🧡 Patreon",         cls: "alt", prefix: "patreon.com/",        ex: "https://patreon.com/you" },
+  ghspon:  { label: "💖 GitHub Sponsors",      zh: "💖 GitHub 赞助",     cls: "alt", prefix: "github.com/sponsors/", ex: "https://github.com/sponsors/you" },
   stripe:  { label: "💳 Card / Stripe",        zh: "💳 刷卡 / Stripe",   cls: "alt", ex: "https://buy.stripe.com/xxxxxx" },
   crypto:  { label: "🪙 Crypto wallet",         zh: "🪙 加密钱包",        cls: "alt", ex: "0x… or your wallet address" },
-  wise:    { label: "🌍 Wise",                 zh: "🌍 Wise",            cls: "alt", ex: "https://wise.com/pay/me/you" },
-  revolut: { label: "💱 Revolut",              zh: "💱 Revolut",         cls: "alt", ex: "https://revolut.me/you" },
-  monzo:   { label: "💷 Monzo",                zh: "💷 Monzo",           cls: "alt", ex: "https://monzo.me/you" },
+  wise:    { label: "🌍 Wise",                 zh: "🌍 Wise",            cls: "alt", prefix: "wise.com/pay/me/",     ex: "https://wise.com/pay/me/you" },
+  revolut: { label: "💱 Revolut",              zh: "💱 Revolut",         cls: "alt", prefix: "revolut.me/",         ex: "https://revolut.me/you" },
+  monzo:   { label: "💷 Monzo",                zh: "💷 Monzo",           cls: "alt", prefix: "monzo.me/",           ex: "https://monzo.me/you" },
   alipay:  { label: "💙 Alipay",               zh: "💙 支付宝",          cls: "alt", ex: "https://qr.alipay.com/xxxxxx" },
   custom:  { label: "🔗 Support link",          zh: "🔗 打赏链接",        cls: "alt", ex: "https://your-link.com" },
 };
@@ -133,6 +136,65 @@ function payLabel(kind) {
   const k = PAYMENT_KINDS[kind] || PAYMENT_KINDS.custom;
   return (typeof window !== "undefined" && window.I18N && window.I18N.lang === "zh" && k.zh) ? k.zh : k.label;
 }
+/* ---- handle ⇄ full-URL for branded kinds with a fixed URL prefix ----
+   Many branded links are just "<prefix><handle>" (buymeacoffee.com/you). The create
+   form asks only for the handle, but the stored link.url stays the full URL so that
+   page rendering, sharing and the server-side anti-spoof check never have to know. */
+function payPrefix(kind) { return (PAYMENT_KINDS[kind] || {}).prefix || ""; }
+
+// registrable host of a user-entered URL (bare domains get https://); "" if unparseable
+function urlHost(u) {
+  try {
+    let s = String(u || "").trim();
+    if (!s) return "";
+    if (!/^[a-z][a-z0-9+.\-]*:/i.test(s)) s = "https://" + s;
+    return new URL(s).hostname.toLowerCase().replace(/^www\./, "");
+  } catch { return ""; }
+}
+
+// strip "<scheme>://", "www.", the prefix host and its path marker (/u/, /sponsors/, $)
+// off whatever was typed or pasted, leaving just the bare handle
+function stripToHandle(prefix, s) {
+  s = String(s || "").trim().replace(/^[a-z][a-z0-9+.\-]*:\/\//i, "").replace(/^www\./i, "");
+  const host = prefix.split("/")[0];
+  if (s.toLowerCase().startsWith(host.toLowerCase())) {
+    s = s.slice(host.length).replace(/^\/+/, "");
+    const marker = prefix.slice(host.length).replace(/^\/+/, "");   // "u/", "sponsors/", "pay/me/", "$"
+    if (marker && s.toLowerCase().startsWith(marker.toLowerCase())) s = s.slice(marker.length);
+  }
+  return s.replace(/^[@$/]+/, "").split(/[/?#\s]/)[0];
+}
+
+// How the form should show a stored URL:
+//   { mode:"handle", value:<handle> } — on the prefix host (or empty)
+//   { mode:"full",   value:<url> }    — a non-handle kind, or an alternate host (paypal.com)
+function splitHandle(kind, url) {
+  const prefix = payPrefix(kind);
+  const u = String(url || "").trim();
+  if (!prefix) return { mode: "full", value: u };
+  if (!u) return { mode: "handle", value: "" };
+  const host = urlHost(u);
+  if (host && host !== prefix.split("/")[0].toLowerCase()) return { mode: "full", value: u };
+  return { mode: "handle", value: stripToHandle(prefix, u) };
+}
+
+// Build the full URL to store from the handle box. Paste-tolerant: a full URL on a
+// *different* allowed host (a paypal.com business link) is kept verbatim; a bare dotted
+// handle (john.doe) is NOT mistaken for a domain because we require a path slash.
+function joinHandle(kind, input) {
+  const prefix = payPrefix(kind);
+  let s = String(input || "").trim();
+  if (!prefix) return s;
+  if (!s) return "";
+  const hasScheme = /^[a-z][a-z0-9+.\-]*:\/\//i.test(s);
+  const hasHostPath = /^[\w.\-]+\.[a-z]{2,}\//i.test(s);   // host + path → a real URL
+  if ((hasScheme || hasHostPath) && urlHost(s) !== prefix.split("/")[0].toLowerCase()) {
+    return hasScheme ? s : "https://" + s;
+  }
+  const handle = stripToHandle(prefix, s);
+  return handle ? "https://" + prefix + handle : "";
+}
+
 const BANDS_ZH = {
   "Financially dramatic": "财务戏精", "Critically broke": "重度破产",
   "Aggressively broke": "激进破产", "Casually broke": "轻度破产", "Suspiciously fine": "可疑地还行",
@@ -336,4 +398,4 @@ function mixHex(a, b, t) {
 }
 
 /* expose */
-window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, brokeScore, pctOf, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow };
+window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, payPrefix, splitHandle, joinHandle, brokeScore, pctOf, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow };
