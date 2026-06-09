@@ -6,7 +6,7 @@
 // a phishing vector. So branded kinds must link to that brand's own hosts. Generic
 // kinds (ramen/coffee/custom) and non-URL kinds (crypto wallet) stay free-form.
 
-export const KNOWN_KINDS = ["ramen", "coffee", "paypal", "kofi", "stripe", "crypto", "wise", "custom"];
+export const KNOWN_KINDS = ["ramen", "coffee", "paypal", "kofi", "stripe", "crypto", "wise", "alipay", "custom"];
 
 // retired kinds → canonical replacement (mirrors canonKind in assets/core.js)
 const KIND_ALIAS = { bmc: "coffee" };
@@ -16,6 +16,7 @@ export const BRAND_HOSTS = {
   kofi:   ["ko-fi.com"],
   stripe: ["stripe.com"],          // also covers buy./checkout. subdomains
   wise:   ["wise.com"],
+  alipay: ["alipay.com"],          // covers qr.alipay.com personal receive links
 };
 
 const SAFE_SCHEMES = ["http", "https", "mailto", "bitcoin", "ethereum", "lightning", "monero", "solana"];

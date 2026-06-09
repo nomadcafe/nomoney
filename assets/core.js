@@ -107,6 +107,7 @@ const PAYMENT_KINDS = {
   stripe:  { label: "💳 Card / Stripe",        zh: "💳 刷卡 / Stripe",   cls: "alt", ex: "https://buy.stripe.com/xxxxxx" },
   crypto:  { label: "🪙 Crypto wallet",         zh: "🪙 加密钱包",        cls: "alt", ex: "0x… or your wallet address" },
   wise:    { label: "🌍 Wise",                 zh: "🌍 Wise",            cls: "alt", ex: "https://wise.com/pay/me/you" },
+  alipay:  { label: "💙 Alipay",               zh: "💙 支付宝",          cls: "alt", ex: "https://qr.alipay.com/xxxxxx" },
   custom:  { label: "🔗 Support link",          zh: "🔗 打赏链接",        cls: "alt", ex: "https://your-link.com" },
 };
 
