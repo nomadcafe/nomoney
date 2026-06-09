@@ -9,6 +9,8 @@
 //   Curation is account-less but admin-gated; if WALL_ADMIN_TOKEN is unset, POST is disabled
 //   (manage the list with `wrangler kv key put wall:featured '[...]'` instead).
 
+import { indexEntry } from "../_page.js";
+
 const KEY = "wall:featured";
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
 const MAX_FEATURED = 24;
@@ -58,11 +60,35 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch { return json({ error: "bad json" }, 400); }
   if (!body.token || body.token !== admin) return json({ error: "forbidden" }, 403);
 
-  // admin: list current featured + recently-created pages (for the /admin picker)
+  // admin: list current featured + recent/activity index (for the /admin picker)
   if (body.list) {
     let recent = [];
     try { recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]"); } catch {}
     return json({ featured: await readList(env), recent: Array.isArray(recent) ? recent : [] });
+  }
+
+  // admin: rebuild the index by scanning every page in KV. Surfaces pages that
+  // predate the index or fell off the cap, including their (legacy-null) timestamps.
+  if (body.rebuild) {
+    const entries = [];
+    let cursor;
+    do {
+      const res = await env.PAGES.list({ limit: 1000, cursor });
+      for (const k of res.keys) {
+        const slug = k.name;
+        if (slug.includes(":") || !SLUG_RE.test(slug)) continue; // skip img:/msg:/pages:/wall: + bad
+        const raw = await env.PAGES.get(slug);
+        if (!raw) continue;
+        let st; try { st = JSON.parse(raw); } catch { continue; }
+        entries.push(indexEntry(slug, st.d || {}, st.m || {}));
+      }
+      cursor = res.list_complete ? null : res.cursor;
+    } while (cursor);
+    // newest activity first; pages with unknown timestamps sink to the bottom
+    entries.sort((a, b) => (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || ""));
+    const capped = entries.slice(0, 1000);
+    await env.PAGES.put("pages:recent", JSON.stringify(capped));
+    return json({ rebuilt: capped.length, featured: await readList(env), recent: capped });
   }
 
   let list = await readList(env);

@@ -35,7 +35,18 @@
       <button class="btn btn-ghost" id="addSlugBtn">Add</button>
     </div>
 
-    <h2 style="margin-top:28px">Recent pages</h2>
+    <div class="admin-head" style="margin-top:28px">
+      <h2>Pages <span id="recentCount" class="admin-muted"></span></h2>
+      <button class="btn btn-ghost btn-sm" id="rebuild" title="Scan KV and rebuild the list">↻ Rebuild</button>
+    </div>
+    <div class="admin-row" style="margin-bottom:12px">
+      <select id="sortBy" class="admin-select">
+        <option value="recent">Newest activity</option>
+        <option value="stale">Oldest activity (reclaim candidates)</option>
+        <option value="created">Newest created</option>
+      </select>
+      <label class="admin-check"><input type="checkbox" id="onlyEmpty" /> Empty only</label>
+    </div>
     <div id="recentList" class="admin-list"></div>
   </div>
 </div>

@@ -5,6 +5,7 @@
 // The editToken is never exposed by the public GET routes — only returned here to the creator.
 
 import { RESERVED } from "../_reserved.js";
+import { indexEntry } from "../_page.js";
 
 const SUFFIX_CHARS = "abcdefghijkmnpqrstuvwxyz23456789"; // no 0/o/1/l ambiguity
 const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -56,9 +57,10 @@ export async function onRequestPost({ request, env }) {
     } catch { png = null; }
   }
 
-  let slug, token;
+  let slug, token, prevMeta = null;
+  const isEdit = !!(body.slug && body.editToken);
 
-  if (body.slug && body.editToken) {
+  if (isEdit) {
     // EDIT mode — keep the same slug; require a matching token
     if (!SLUG_RE.test(body.slug)) return json({ error: "bad slug" }, 400);
     const existing = await env.PAGES.get(body.slug);
@@ -67,6 +69,7 @@ export async function onRequestPost({ request, env }) {
     if (!prev || prev.t !== body.editToken) return json({ error: "forbidden" }, 403);
     slug = body.slug;
     token = prev.t;            // keep the original token
+    prevMeta = (prev.m && typeof prev.m === "object") ? prev.m : null;
   } else {
     // CREATE mode — vanity slug from the handle; suffix if reserved or taken
     let root = cleanHandle(data.handle);
@@ -85,23 +88,29 @@ export async function onRequestPost({ request, env }) {
   // the handle shown on the page always matches the real URL (slug)
   data.handle = slug;
 
-  const jsonStr = JSON.stringify({ d: data, m: (body.meta && typeof body.meta === "object") ? body.meta : {}, t: token });
+  // timestamps are server-owned (never trusted from the client). createdAt is set
+  // once and preserved across edits; updatedAt moves every save.
+  const now = new Date().toISOString();
+  const meta = (body.meta && typeof body.meta === "object") ? body.meta : {};
+  meta.createdAt = (prevMeta && prevMeta.createdAt) || now;
+  meta.updatedAt = now;
+
+  const jsonStr = JSON.stringify({ d: data, m: meta, t: token });
   if (jsonStr.length > MAX_JSON) return json({ error: "too large" }, 413);
 
   await env.PAGES.put(slug, jsonStr);
   if (png) await env.PAGES.put("img:" + slug, png);
 
-  // maintain a "recently created" index for the admin wall picker (create only; best-effort)
-  if (!(body.slug && body.editToken)) {
-    try {
-      let recent = [];
-      try { recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]"); } catch {}
-      recent = (Array.isArray(recent) ? recent : []).filter(r => r && r.slug !== slug);
-      recent.unshift({ slug, name: data.name || "", status: data.status || "ramen", emoji: typeof data.emoji === "string" ? data.emoji : "" });
-      if (recent.length > 100) recent = recent.slice(0, 100);
-      await env.PAGES.put("pages:recent", JSON.stringify(recent));
-    } catch (e) { /* index is best-effort */ }
-  }
+  // maintain the recent/activity index for /admin — on create AND edit, so the
+  // index reflects real activity. Best-effort; admin can also rebuild from KV.
+  try {
+    let recent = [];
+    try { recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]"); } catch {}
+    recent = (Array.isArray(recent) ? recent : []).filter(r => r && r.slug !== slug);
+    recent.unshift(indexEntry(slug, data, meta));   // newest activity first
+    if (recent.length > 1000) recent = recent.slice(0, 1000);
+    await env.PAGES.put("pages:recent", JSON.stringify(recent));
+  } catch (e) { /* index is best-effort */ }
 
   return json({ slug, editToken: token });
 }
