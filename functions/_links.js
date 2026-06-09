@@ -6,17 +6,23 @@
 // a phishing vector. So branded kinds must link to that brand's own hosts. Generic
 // kinds (ramen/coffee/custom) and non-URL kinds (crypto wallet) stay free-form.
 
-export const KNOWN_KINDS = ["ramen", "coffee", "paypal", "kofi", "stripe", "crypto", "wise", "alipay", "custom"];
+export const KNOWN_KINDS = ["ramen", "coffee", "paypal", "venmo", "cashapp", "kofi", "patreon", "ghspon", "stripe", "crypto", "wise", "revolut", "monzo", "alipay", "custom"];
 
 // retired kinds → canonical replacement (mirrors canonKind in assets/core.js)
 const KIND_ALIAS = { bmc: "coffee" };
 
 export const BRAND_HOSTS = {
-  paypal: ["paypal.me", "paypal.com"],
-  kofi:   ["ko-fi.com"],
-  stripe: ["stripe.com"],          // also covers buy./checkout. subdomains
-  wise:   ["wise.com"],
-  alipay: ["alipay.com"],          // covers qr.alipay.com personal receive links
+  paypal:  ["paypal.me", "paypal.com"],
+  venmo:   ["venmo.com"],
+  cashapp: ["cash.app"],
+  kofi:    ["ko-fi.com"],
+  patreon: ["patreon.com"],
+  ghspon:  ["github.com"],
+  stripe:  ["stripe.com"],          // also covers buy./checkout. subdomains
+  wise:    ["wise.com"],
+  revolut: ["revolut.me", "revolut.com"],
+  monzo:   ["monzo.me"],
+  alipay:  ["alipay.com"],          // covers qr.alipay.com personal receive links
 };
 
 const SAFE_SCHEMES = ["http", "https", "mailto", "bitcoin", "ethereum", "lightning", "monero", "solana"];
