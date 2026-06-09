@@ -2,7 +2,7 @@ import "../assets/core.js"; // sets window.NM + window.I18N + loads the styleshe
 
 const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; };
 const t = (k) => window.I18N.t(k);
-const isZh = () => window.I18N.lang === "zh";
+const lang = () => window.I18N.lang;
 
 function setAccent(el, accent) {
   el.style.setProperty("--accent", accent);
@@ -21,10 +21,12 @@ function renderHero() {
   setAccent(el, st.accent);
   const links = (base.links || []).slice(0, 2).map((l, i) => {
     const k = NM.PAYMENT_KINDS[l.kind] || NM.PAYMENT_KINDS.custom;
-    const label = (i === 0 && isZh()) ? (base.zhcta || NM.payLabel(l.kind)) : (isZh() ? NM.payLabel(l.kind) : (l.label || k.label));
+    const label = lang() === "en"
+      ? (l.label || k.label)
+      : (i === 0 ? (base[lang() + "cta"] || NM.payLabel(l.kind)) : NM.payLabel(l.kind));
     return `<a class="${k.cls}">${label}</a>`;
   }).join("");
-  const raised = isZh() ? `已筹 $${base.raised} / 目标 $${base.goal} 生存基金` : `$${base.raised} raised of $${base.goal} survival fund`;
+  const raised = NM.raisedLine(base.raised, base.goal);
   el.innerHTML = `
     <div class="avatar">${st.emoji}</div>
     <div class="status-pill"><span class="dot"></span>${st.label}</div>
@@ -32,7 +34,7 @@ function renderHero() {
     <div class="page-handle">no.money/${base.handle}</div>
     <div class="page-story">${st.tagline || st.story.split("\n")[0]}</div>
     <div class="goal-wrap">
-      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${isZh() ? `${t("card.lessbroke")} ${pct}%` : `${pct}% ${t("card.lessbroke")}`}</span></div>
+      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${NM.pctLine(pct)}</span></div>
       <div class="goal-bar"><i style="width:${pct}%"></i></div>
       <div class="goal-sub">${raised}</div>
     </div>
@@ -52,8 +54,9 @@ function renderDemos() {
     const bs = NM.brokeScore(d), pct = NM.pctOf(d);
     const fl = (d.links && d.links[0]) || null;
     const fk = fl ? (NM.PAYMENT_KINDS[fl.kind] || NM.PAYMENT_KINDS.custom) : null;
-    const cta = isZh() ? (d.zhcta || (fk ? NM.payLabel(fl.kind) : "🍜 请我吃泡面"))
-                       : (fl ? (fl.label || fk.label) : "🍜 Buy me ramen");
+    const cta = d[lang() + "cta"]
+      || (lang() === "en" ? (fl ? (fl.label || fk.label) : NM.payLabel("ramen"))
+                          : (fl ? NM.payLabel(fl.kind) : NM.payLabel("ramen")));
     const a = document.createElement("a");
     a.className = "page-card demo-card theme-" + (st.theme || "clean");
     a.href = "p.html?demo=" + key;
@@ -65,7 +68,7 @@ function renderDemos() {
       <div class="page-handle">no.money/${d.handle}</div>
       <div class="page-story">${st.tagline || st.story.split("\n")[0]}</div>
       <div class="goal-wrap">
-        <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${isZh() ? `${t("card.lessbroke")} ${pct}%` : `${pct}% ${t("card.lessbroke")}`}</span></div>
+        <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${NM.pctLine(pct)}</span></div>
         <div class="goal-bar"><i style="width:${pct}%"></i></div>
       </div>
       <div class="demo-cta">${cta}</div>
@@ -90,9 +93,9 @@ function renderWall() {
     const st = NM.locStatus(NM.STATUSES[sp]);
     const bs = NM.brokeScore({ status: sp, goal: c.goal, raised: c.raised });
     const pct = NM.pctOf({ goal: c.goal, raised: c.raised });
-    const cta = isZh()
-      ? (c.link && c.link.kind ? NM.payLabel(c.link.kind) : "🍜 请我吃泡面")
-      : (c.link && c.link.label ? c.link.label : (c.link ? (NM.PAYMENT_KINDS[c.link.kind] || NM.PAYMENT_KINDS.custom).label : "🍜 Buy me ramen"));
+    const cta = lang() === "en"
+      ? (c.link && c.link.label ? c.link.label : (c.link ? NM.payLabel(c.link.kind) : NM.payLabel("ramen")))
+      : (c.link && c.link.kind ? NM.payLabel(c.link.kind) : NM.payLabel("ramen"));
     const a = document.createElement("a");
     a.className = "page-card demo-card theme-" + (st.theme || "clean");
     a.href = "/" + c.slug;
@@ -104,7 +107,7 @@ function renderWall() {
       <div class="page-handle">no.money/${esc(c.handle)}</div>
       <div class="page-story">${st.tagline || st.story.split("\n")[0]}</div>
       <div class="goal-wrap">
-        <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${isZh() ? `${t("card.lessbroke")} ${pct}%` : `${pct}% ${t("card.lessbroke")}`}</span></div>
+        <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${NM.pctLine(pct)}</span></div>
         <div class="goal-bar"><i style="width:${pct}%"></i></div>
       </div>
       <div class="demo-cta">${esc(cta)}</div>
@@ -127,5 +130,5 @@ window.I18N.apply();                       // translate static [data-i18n] text
 document.title = t("title.index");
 renderAll();                               // render dynamic cards in the current language
 loadWall();                                // fetch + reveal the curated wall (no-op on static/local)
-document.getElementById("langToggle").onclick = () => window.I18N.setLang(isZh() ? "en" : "zh");
+document.getElementById("langToggle").onclick = () => window.I18N.cycleLang();
 window.addEventListener("langchange", () => { document.title = t("title.index"); renderAll(); });  // setLang already re-applied static text

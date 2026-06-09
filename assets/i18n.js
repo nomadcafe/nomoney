@@ -4,7 +4,7 @@
 
 const STR = {
   en: {
-    "lang.other": "中文",
+    "lang.other": "Español",
     "nav.examples": "Examples", "nav.how": "How it works", "nav.create": "Create my page",
     "hero.kicker": "💸 the only flex is having none",
     "hero.h1": "No Money?<br><span class=\"green\">Make it official.</span>",
@@ -84,6 +84,7 @@ const STR = {
     "toast.no_links_msg": "Links aren't allowed", "toast.post_fail": "Couldn't post — try again",
     "toast.deleted": "Deleted", "toast.delete_fail": "Couldn't delete",
     "toast.edit_copied": "Edit link copied — save it somewhere safe 🔒",
+    "link.must_match": "This button must link to {host}",
   },
   zh: {
     "lang.other": "EN",
@@ -166,13 +167,194 @@ const STR = {
     "toast.no_links_msg": "不能带链接", "toast.post_fail": "发布失败——重试",
     "toast.deleted": "已删除", "toast.delete_fail": "删除失败",
     "toast.edit_copied": "编辑链接已复制——请妥善保存 🔒",
+    "link.must_match": "这个按钮的链接必须指向 {host}",
+  },
+  es: {
+    "lang.other": "日本語",
+    "nav.examples": "Ejemplos", "nav.how": "Cómo funciona", "nav.create": "Crear mi página",
+    "hero.kicker": "💸 el único flex es no tener nada",
+    "hero.h1": "¿Sin dinero?<br><span class=\"green\">Hazlo oficial.</span>",
+    "hero.sub": "Crea una página de apoyo graciosa cuando estás sin un duro. Añade tus enlaces de propina. Compártela. Sé un poco menos pobre.",
+    "hero.cta1": "Crear mi página de pobre →", "hero.cta2": "Ver un ejemplo",
+    "hero.note": "sin registro · gratis · listo en 60 segundos",
+    "demos.eyebrow": "Pobreza certificada", "demos.h2": "Páginas que la gente de verdad inventó",
+    "demos.p": "Cada tipo de pobreza merece representación. Elige tu trauma financiero.",
+    "wall.eyebrow": "Muro de los pobres", "wall.h2": "Gente real, recién certificada como pobre",
+    "wall.p": "Páginas reales que la gente creó y compartió. Sí, tú también puedes estar en este muro.",
+    "card.goal": "Meta", "card.lessbroke": "menos pobre", "card.broke_score": "Nivel de quiebra",
+    "card.status": "Estado", "card.risk": "Nivel de riesgo",
+    "how.eyebrow": "Dolorosamente simple", "how.h2": "Pobre en cuatro pasos",
+    "how.p": "Sin registro, sin tonterías — pobre y compartible en un minuto.",
+    "how.s1t": "Elige tu pobreza", "how.s1d": "¿Modo ramen? ¿Pánico del alquiler? ¿Deuda de dominio? Elige el estado que más duela.",
+    "how.s2t": "Añade tus enlaces", "how.s2d": "PayPal, Ko-fi, monedero cripto — lo que sea que reciba dinero. Nosotros nunca lo tocamos.",
+    "how.s3t": "Consigue tu imagen", "how.s3d": "Un toque crea una imagen lista para memes en X, Reddit y Telegram. De esto se trata todo.",
+    "how.s4t": "Vuélvete menos pobre", "how.s4d": "Publícala. Mira cómo baja tu Nivel de quiebra mientras internet se apiada de ti (económicamente).",
+    "faq.eyebrow": "Preguntas frecuentes", "faq.h2": "Preguntas que hacen los pobres",
+    "faq.q1": "¿Qué es esto exactamente?",
+    "faq.a1": "No Money convierte «estoy sin dinero» en una página para compartir. Elige tu estado de pobreza, pon tus enlaces de propina y publica una tarjeta lista para memes con un Nivel de quiebra. La gente se apiada de ti (económicamente).",
+    "faq.q2": "¿Es gratis?", "faq.a2": "Sí — crear y compartir una página es gratis, sin registro.",
+    "faq.q3": "¿Os quedáis una parte de mis propinas?", "faq.a3": "Nunca. Tus enlaces (PayPal, Ko-fi, cripto…) van directos a ti — No Money nunca toca el dinero.",
+    "faq.q4": "¿Necesito una cuenta?", "faq.a4": "No. Tu página es solo un enlace para compartir — sin login, sin contraseña que olvidar.",
+    "faq.q5": "¿Esto es una recaudación o algo de caridad de verdad?", "faq.a5": "No. Es para páginas de apoyo personal, propinas a creadores y bromas de internet — no caridad ni recaudación. Sé pobre con responsabilidad.",
+    "cta.stamp": "💸 Pobre certificado", "cta.h2": "Estoy sin dinero,<br>pero que sea <span class=\"green\">gracioso.</span>",
+    "cta.p": "Ese es todo el producto. Gratis, sin registro, un poco menos pobre en 60 segundos.",
+    "cta.btn": "Crear mi página de pobre →",
+    "foot.tagline": "Haz oficial tu pobreza.",
+    "foot.disclaimer": "<b>No Money</b> es para páginas de apoyo personal y bromas de internet — no es una plataforma de caridad ni de recaudación. Sé pobre con responsabilidad.",
+    "foot.made": "hecho con 💸 no money", "foot.copy": "© no.money — sé pobre con responsabilidad",
+    "nf.title": "Demasiado pobre para existir · No Money", "nf.stamp": "💸 404 · Fondos insuficientes",
+    "nf.h2": "Esta página está<br>demasiado <span class=\"green\">pobre</span> para existir.",
+    "nf.p": "Gastó su último byte. Pero siempre puedes crear una nueva.", "nf.home": "Volver al inicio",
+    "create.head_h1": "Construye tu página de pobre", "create.head_p": "Sin registro — vive en un enlace para compartir. Unos 60 segundos.",
+    "create.surprise": "🎲 Sorpréndeme", "create.name": "Tu nombre",
+    "create.avatar": "Avatar", "create.avatar_hint": "(opcional — por defecto, tu estado de pobreza)",
+    "create.handle": "Tu handle", "create.editnote": "Editando — la URL no cambia.",
+    "create.status_q": "¿Qué tipo de pobre eres?", "create.story": "Tu historia lacrimógena",
+    "create.story_ph": "Hazlo gracioso. La autocompasión vende.",
+    "create.name_ph": "p. ej. Mira", "create.handle_ph": "tu-handle",
+    "title.index": "No Money — páginas de apoyo graciosas para creadores sin dinero", "title.create": "Crea tu página de pobre · No Money",
+    "create.ai_btn": "✨ Reescríbelo más gracioso (IA)", "create.ai_hint": "Reescribe tu historia con IA — si la IA está ocupada, usa frases seleccionadas.",
+    "create.goal": "Meta y progreso", "create.goal_hint": "meta de supervivencia", "create.raised_hint": "recaudado hasta ahora",
+    "create.links": "Enlaces de apoyo", "create.links_note": "(el dinero va directo a ti)", "create.add_link": "+ Añadir enlace de apoyo",
+    "create.publish": "Obtener mi página de pobre →", "create.publish_note": "Sin registro. Tu página vive en un enlace para compartir.",
+    "create.preview_label": "Vista previa en vivo", "create.publishtop": "Obtener mi página →",
+    "resume.has": "Ya tienes una página:", "resume.edit": "Editarla", "resume.new": "Crear una nueva",
+    "create.publishing": "Publicando…", "create.updating": "Actualizando…", "create.update_btn": "Actualizar mi página →",
+    "create.edit_h1": "Edita tu página", "create.thinking": "✨ Pensando…", "create.loading": "Cargando tu página…",
+    "emoji.auto": "Auto", "link.btn_text_ph": "Texto del botón — p. ej. ", "link.url_ph": "https://tu-enlace.com",
+    "modal.badge": "💸 Eres oficialmente pobre", "modal.live_h3": "Tu página está en línea 🎉",
+    "modal.updated_badge": "✅ Actualizada", "modal.updated_h3": "Tu página se ha actualizado 🎉",
+    "modal.copy": "Copiar enlace", "modal.share_label": "Compártela — la imagen mendiga por ti",
+    "btn.copied": "Copiado ✓",
+    "modal.open": "Abrir mi página ↗", "modal.download": "⬇ Descargar imagen",
+    "modal.editlink": "Enlace privado para editar esta página después", "modal.edithint_tail": "— cualquiera que lo tenga puede editar, guárdalo para ti.",
+    "modal.edit_title": "Guarda tu enlace de edición privado",
+    "modal.edit_warn": "Esta es la única forma de editar esta página después — no hay cuentas. Si borras los datos del navegador, pierdes el acceso. Cualquiera con el enlace puede editar, así que mantenlo en privado.",
+    "modal.edit_copy": "Copiar enlace de edición",
+    "card.score_of": "/100", "card.survival": "recaudado de",
+    "p.share_btn": "📸 Obtener imagen", "p.copy_btn": "🔗 Copiar enlace",
+    "p.remix_strong": "¿Tú también sin dinero?", "p.remix_span": "Crea tu propia página de pobre en 60 segundos. Sin registro.", "p.remix_btn": "Crear la mía →",
+    "p.foot": "hecho con <b>no.money</b>",
+    "p.modal_h3": "Tu imagen para compartir está lista 📸", "p.modal_p": "Publícala en X, Reddit o Telegram. La imagen mendiga por ti.",
+    "p.modal_download": "⬇ Descargar imagen", "p.modal_close": "Cerrar",
+    "msg.title": "Mensajes de apoyo", "msg.name_ph": "Tu nombre (opcional)", "msg.text_ph": "Anímale — o búrlate. Que sea gracioso.",
+    "msg.post": "Publicar mensaje", "msg.empty": "Aún no hay mensajes — sé el primero en apiadarte (económicamente).",
+    "toast.link_copied": "Enlace copiado 🔗", "toast.copy_manual": "Pulsa ⌘/Ctrl+C para copiar", "toast.copy_fail": "Error al copiar — selecciona la barra de URL",
+    "toast.tip_add_link": "Consejo: añade un enlace de apoyo para que de verdad puedan darte propina 💸",
+    "toast.publish_fail": "No se pudo publicar — revisa tu conexión e inténtalo de nuevo",
+    "toast.edit_invalid": "Este enlace de edición no es válido — no se puede actualizar", "toast.no_edit_access": "Sin acceso de edición en este dispositivo — los cambios no se guardarán",
+    "toast.load_fail": "No se pudo cargar esa página", "toast.ai_done": "✨ Reescrito por IA",
+    "toast.ai_rate": "Demasiadas reescrituras con IA — aquí tienes una seleccionada", "toast.ai_punch": "✨ Mejorado",
+    "toast.surprise": "🎲 Nuevo personaje pobre generado", "toast.links_max": "Plan gratis: máximo 5 enlaces",
+    "toast.write_first": "Escribe algo primero", "toast.posted": "Publicado 🎉",
+    "toast.no_links_msg": "No se permiten enlaces", "toast.post_fail": "No se pudo publicar — inténtalo de nuevo",
+    "toast.deleted": "Eliminado", "toast.delete_fail": "No se pudo eliminar",
+    "toast.edit_copied": "Enlace de edición copiado — guárdalo en un lugar seguro 🔒",
+    "link.must_match": "Este botón debe enlazar a {host}",
+  },
+  ja: {
+    "lang.other": "中文",
+    "nav.examples": "例", "nav.how": "使い方", "nav.create": "ページを作る",
+    "hero.kicker": "💸 唯一の自慢は無一文",
+    "hero.h1": "お金がない？<br><span class=\"green\">公式にしよう。</span>",
+    "hero.sub": "金欠のときに笑える応援ページを作ろう。投げ銭リンクを貼って、シェアして、ちょっとだけ救われよう。",
+    "hero.cta1": "破産ページを作る →", "hero.cta2": "例を見る",
+    "hero.note": "登録不要 · 無料 · 60秒で完成",
+    "demos.eyebrow": "公認・破産", "demos.h2": "みんなが実際に作ったページ",
+    "demos.p": "どんな金欠にも居場所がある。あなたの金銭的トラウマを選ぼう。",
+    "wall.eyebrow": "破産の壁", "wall.h2": "リアルな人々、最近破産認定",
+    "wall.p": "実際に作られシェアされたページ。そう、あなたもこの壁に載れる。",
+    "card.goal": "目標", "card.lessbroke": "脱貧", "card.broke_score": "破産スコア",
+    "card.status": "ステータス", "card.risk": "リスク度",
+    "how.eyebrow": "痛いほど簡単", "how.h2": "4ステップで破産",
+    "how.p": "登録なし、面倒なし——1分で破産してシェアできる。",
+    "how.s1t": "金欠タイプを選ぶ", "how.s1d": "ラーメンモード？家賃パニック？ドメイン負債？一番刺さるステータスを選ぼう。",
+    "how.s2t": "リンクを追加", "how.s2d": "PayPal、Ko-fi、暗号資産ウォレット——お金が受け取れるなら何でも。私たちは一切触れません。",
+    "how.s3t": "シェア画像を取得", "how.s3d": "ワンタップでX・Reddit・Telegram用のミーム画像が完成。これこそが本題。",
+    "how.s4t": "ちょっと救われる", "how.s4d": "投稿しよう。ネットに（経済的に）同情されるたび、破産スコアが下がっていく。",
+    "faq.eyebrow": "よくある質問", "faq.h2": "金欠の人がよく聞くこと",
+    "faq.q1": "そもそもこれ何？",
+    "faq.a1": "No Money は「金欠です」をシェアできるページに変える。破産ステータスを選んで投げ銭リンクを貼り、破産スコア付きのミーム画像を投稿。みんなが（経済的に）同情してくれる。",
+    "faq.q2": "無料？", "faq.a2": "うん——ページの作成もシェアも無料、登録不要。",
+    "faq.q3": "投げ銭から手数料を取る？", "faq.a3": "絶対に取らない。あなたのリンク（PayPal、Ko-fi、暗号資産…）はすべて直接あなたへ——No Money はお金に一切触れない。",
+    "faq.q4": "アカウントは必要？", "faq.a4": "不要。あなたのページはただのシェア用リンク——ログインも、忘れるパスワードもなし。",
+    "faq.q5": "これって本物の募金や慈善活動？", "faq.a5": "違う。個人的な応援ページ、クリエイターへの投げ銭、ネタのためのもの——慈善でも募金でもない。責任を持って破産しよう。",
+    "cta.stamp": "💸 公認・破産", "cta.h2": "金欠だけど、<br><span class=\"green\">笑えるやつにする。</span>",
+    "cta.p": "それがこのサービスのすべて。無料、登録不要、60秒でちょっと救われる。",
+    "cta.btn": "破産ページを作る →",
+    "foot.tagline": "破産を公式に。",
+    "foot.disclaimer": "<b>No Money</b> は個人的な応援ページとネタのためのもの——慈善や募金のプラットフォームではありません。責任を持って破産しよう。",
+    "foot.made": "💸 no money で制作", "foot.copy": "© no.money — 責任を持って破産しよう",
+    "nf.title": "貧しすぎて存在できない · No Money", "nf.stamp": "💸 404 · 残高不足",
+    "nf.h2": "このページは<br><span class=\"green\">貧しすぎて</span>存在できない。",
+    "nf.p": "最後の1バイトまで使い果たした。でも新しいのはいつでも作れる。", "nf.home": "ホームに戻る",
+    "create.head_h1": "破産ページを作る", "create.head_p": "登録不要——シェア用リンクの中に存在。約60秒。",
+    "create.surprise": "🎲 おまかせ", "create.name": "あなたの名前",
+    "create.avatar": "アバター", "create.avatar_hint": "（任意——未指定なら破産ステータスを使用）",
+    "create.handle": "ハンドル名", "create.editnote": "編集中——URLは変わりません。",
+    "create.status_q": "どんな金欠タイプ？", "create.story": "あなたの泣ける話",
+    "create.story_ph": "笑えるやつにしよう。自虐は売れる。",
+    "create.name_ph": "例：Mira", "create.handle_ph": "your-handle",
+    "title.index": "No Money — 金欠クリエイターのための笑える応援ページ", "title.create": "破産ページを作る · No Money",
+    "create.ai_btn": "✨ もっと笑えるAIリライト", "create.ai_hint": "AIが話をリライト——AIが混雑時は厳選フレーズに切り替え。",
+    "create.goal": "目標と進捗", "create.goal_hint": "生存目標", "create.raised_hint": "現在の達成額",
+    "create.links": "応援リンク", "create.links_note": "（お金は直接あなたへ）", "create.add_link": "+ 応援リンクを追加",
+    "create.publish": "破産ページを公開 →", "create.publish_note": "登録不要。ページはシェア用リンクの中に。",
+    "create.preview_label": "ライブプレビュー", "create.publishtop": "ページを公開 →",
+    "resume.has": "すでにページがあります：", "resume.edit": "編集する", "resume.new": "新しく作る",
+    "create.publishing": "公開中…", "create.updating": "更新中…", "create.update_btn": "ページを更新 →",
+    "create.edit_h1": "ページを編集", "create.thinking": "✨ 考え中…", "create.loading": "ページを読み込み中…",
+    "emoji.auto": "自動", "link.btn_text_ph": "ボタンの文字——例： ", "link.url_ph": "https://your-link.com",
+    "modal.badge": "💸 公式に破産しました", "modal.live_h3": "ページが公開されました 🎉",
+    "modal.updated_badge": "✅ 更新済み", "modal.updated_h3": "ページを更新しました 🎉",
+    "modal.copy": "リンクをコピー", "modal.share_label": "シェアしよう——画像が代わりに物乞いする",
+    "btn.copied": "コピー完了 ✓",
+    "modal.open": "ページを開く ↗", "modal.download": "⬇ 画像を保存",
+    "modal.editlink": "あとでこのページを編集する非公開リンク", "modal.edithint_tail": "——持っている人は誰でも編集可能、自分だけで保管を。",
+    "modal.edit_title": "非公開の編集リンクを保存",
+    "modal.edit_warn": "あとでこのページを編集する唯一の方法です——アカウントはありません。ブラウザのデータを消すとアクセスできなくなります。リンクを持つ人は誰でも編集できるので、非公開に。",
+    "modal.edit_copy": "編集リンクをコピー",
+    "card.score_of": "/100", "card.survival": "達成 /",
+    "p.share_btn": "📸 シェア画像を取得", "p.copy_btn": "🔗 リンクをコピー",
+    "p.remix_strong": "あなたも金欠？", "p.remix_span": "60秒で自分の破産ページを作ろう。登録不要。", "p.remix_btn": "自分のを作る →",
+    "p.foot": "<b>no.money</b> で制作",
+    "p.modal_h3": "シェア画像ができました 📸", "p.modal_p": "X・Reddit・Telegramに投稿。画像が代わりに物乞いする。",
+    "p.modal_download": "⬇ 画像を保存", "p.modal_close": "閉じる",
+    "msg.title": "応援メッセージ", "msg.name_ph": "あなたの名前（任意）", "msg.text_ph": "応援しよう——いじってもOK。笑える感じで。",
+    "msg.post": "メッセージを送る", "msg.empty": "まだメッセージなし——最初に（経済的に）同情しよう。",
+    "toast.link_copied": "リンクをコピーしました 🔗", "toast.copy_manual": "⌘/Ctrl+C でコピー", "toast.copy_fail": "コピー失敗——URLバーを選択して",
+    "toast.tip_add_link": "ヒント：応援リンクを追加すれば実際に投げ銭してもらえる 💸",
+    "toast.publish_fail": "公開できませんでした——接続を確認して再試行",
+    "toast.edit_invalid": "この編集リンクは無効です——更新できません", "toast.no_edit_access": "この端末に編集権限がありません——変更は保存されません",
+    "toast.load_fail": "そのページを読み込めませんでした", "toast.ai_done": "✨ AIがリライトしました",
+    "toast.ai_rate": "AIリライトが多すぎ——厳選版をどうぞ", "toast.ai_punch": "✨ パンチを追加",
+    "toast.surprise": "🎲 新しい破産キャラを生成", "toast.links_max": "無料プラン：リンクは最大5つ",
+    "toast.write_first": "まず何か書いて", "toast.posted": "投稿しました 🎉",
+    "toast.no_links_msg": "リンクは使えません", "toast.post_fail": "投稿できませんでした——再試行",
+    "toast.deleted": "削除しました", "toast.delete_fail": "削除できませんでした",
+    "toast.edit_copied": "編集リンクをコピー——安全な場所に保管を 🔒",
+    "link.must_match": "このボタンは {host} にリンクする必要があります",
   },
 };
 
+// Supported languages, in the order the toggle button cycles through them.
+// Each table's "lang.other" label names the NEXT language in this cycle.
+const LANGS = ["en", "es", "ja", "zh"];
+const HTML_LANG = { en: "en", es: "es", ja: "ja", zh: "zh-CN" };
+const has = l => LANGS.indexOf(l) !== -1;
+
+function detect() {
+  const n = (navigator.language || "").toLowerCase();
+  if (n.startsWith("zh")) return "zh";
+  if (n.startsWith("es")) return "es";
+  if (n.startsWith("ja")) return "ja";
+  return "en";
+}
+
 const urlLang = (() => { try { return new URLSearchParams(location.search).get("lang"); } catch (e) { return null; } })();
-let lang = (urlLang === "en" || urlLang === "zh") ? urlLang
-  : (localStorage.getItem("nm:lang") || ((navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en"));
-if (urlLang === "en" || urlLang === "zh") { try { localStorage.setItem("nm:lang", urlLang); } catch (e) {} }
+const saved = (() => { try { return localStorage.getItem("nm:lang"); } catch (e) { return null; } })();
+let lang = has(urlLang) ? urlLang : (has(saved) ? saved : detect());
+if (has(urlLang)) { try { localStorage.setItem("nm:lang", urlLang); } catch (e) {} }
 
 function t(key) {
   const l = STR[lang] || STR.en;
@@ -186,13 +368,16 @@ function applyI18n(root = document) {
 }
 
 function setLang(l) {
-  if (l !== "en" && l !== "zh") return;
+  if (!has(l)) return;
   lang = l;
   try { localStorage.setItem("nm:lang", l); } catch (e) {}
-  document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
+  document.documentElement.lang = HTML_LANG[l] || "en";
   applyI18n();
   window.dispatchEvent(new CustomEvent("langchange", { detail: { lang: l } }));
 }
 
-document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
-window.I18N = { t, get lang() { return lang; }, setLang, apply: applyI18n };
+// advance to the next language in the cycle (en → es → ja → zh → en)
+function cycleLang() { setLang(LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length]); }
+
+document.documentElement.lang = HTML_LANG[lang] || "en";
+window.I18N = { t, get lang() { return lang; }, langs: LANGS, setLang, cycleLang, apply: applyI18n };

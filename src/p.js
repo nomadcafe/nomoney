@@ -1,6 +1,6 @@
 import "../assets/core.js"; // sets window.NM + loads the stylesheet
 const t = (k) => window.I18N.t(k);
-const isZh = () => window.I18N.lang === "zh";
+const lang = () => window.I18N.lang;
 const params = new URLSearchParams(location.search);
 let data = null;
 if (window.__PAGE__ && typeof window.__PAGE__ === "object") {
@@ -31,9 +31,7 @@ function render() {
   document.documentElement.style.setProperty("--accent-glow", hexA(st.accent, 0.18));
 
   const story = data.story || ls.story;
-  document.title = isZh()
-    ? `${data.name} 破产 ${bs.score}% · No Money`
-    : `${data.name} is ${bs.score}% broke · No Money`;
+  document.title = NM.pageTitle(data.name, bs.score);
 
   const links = data.links.map(l => {
     // never show a brand the link doesn't actually go to (protects pages saved before
@@ -41,7 +39,7 @@ function render() {
     const k0 = NM.canonKind(l.kind);
     const kind = NM.brandMismatch(k0, l.url) ? "custom" : k0;
     const k = NM.PAYMENT_KINDS[kind] || NM.PAYMENT_KINDS.custom;
-    const label = (isZh() && l.zh) ? l.zh : (l.label || NM.payLabel(kind));   // demos carry zh labels; user pages keep their own
+    const label = (lang() !== "en" && l[lang()]) ? l[lang()] : (l.label || NM.payLabel(kind));   // demos carry localized labels; user pages keep their own
     // these are visitor-clickable, user-submitted outbound links: nofollow+ugc so public
     // pages can't be farmed for SEO backlinks; noreferrer hides where the tipper came from
     const a = `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener noreferrer nofollow ugc">${esc(label)}</a>`;
@@ -50,20 +48,18 @@ function render() {
     return host ? a + `<p class="link-host">→ ${esc(host)}</p>` : a;
   }).join("");
 
-  const raisedLine = isZh()
-    ? `${t("card.survival")} $${num(data.raised)} / 生存目标 $${num(data.goal)}`
-    : `$${num(data.raised)} raised of $${num(data.goal)} survival fund`;
+  const raisedLine = NM.raisedLine(data.raised, data.goal);
 
   document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
   document.getElementById("card").innerHTML = `
     <div class="avatar">${esc(data.emoji || st.emoji)}</div>
     <div class="status-pill"><span class="dot"></span>${esc(ls.label)}</div>
-    <div class="page-name">${esc(data.name || (isZh() ? "某破产人士" : "Someone broke"))}</div>
+    <div class="page-name">${esc(data.name || NM.someone())}</div>
     <div class="page-handle">no.money/${esc(data.handle || "you")}</div>
     <div class="page-story">${esc(story)}</div>
 
     <div class="goal-wrap">
-      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${pct}% ${t("card.lessbroke")}</span></div>
+      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${NM.pctLine(pct)}</span></div>
       <div class="goal-bar"><i style="width:${pct}%"></i></div>
       <div class="goal-sub">${raisedLine}</div>
     </div>
@@ -102,7 +98,7 @@ async function initMessages() {
   if (isVanity) {
     try { const r = await fetch("/api/msgs?slug=" + encodeURIComponent(slug)); if (r.ok) messages = (await r.json()).messages || []; } catch (e) {}
   } else {
-    const seed = (isZh() && st.zhmsgs) ? st.zhmsgs : (data.msgs || []); // demo: static, read-only; localized seed in zh
+    const seed = st[lang() + "msgs"] || data.msgs || []; // demo: static, read-only; localized seed where available
     messages = seed.map(m => ({ n: m[1] || "anon", t: m[0] }));
   }
   renderMsgSection();
@@ -204,5 +200,5 @@ document.getElementById("copyBtn").onclick = async () => {
 
 // language toggle + re-render dynamic content on change
 const langToggle = document.getElementById("langToggle");
-if (langToggle) langToggle.onclick = () => window.I18N.setLang(isZh() ? "en" : "zh");
+if (langToggle) langToggle.onclick = () => window.I18N.cycleLang();
 window.addEventListener("langchange", () => { render(); initMessages(); window.I18N.apply(); }); // initMessages re-seeds demo msgs in the new language

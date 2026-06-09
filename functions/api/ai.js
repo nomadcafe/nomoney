@@ -23,6 +23,36 @@ const SYSTEM_ZH =
   "不要话题标签、不要链接、不要外层引号，最多一个 emoji。" +
   "只输出故事本身——不要任何前言或解释。";
 
+const SYSTEM_ES =
+  "Escribes la breve «historia lacrimógena» que aparece en páginas de apoyo graciosas para creadores sin dinero (un sitio llamado No Money). " +
+  "Tono: autocrítico, dramático pero ligero, genuinamente gracioso, en español natural (no suene a traducción). " +
+  "2–3 líneas cortas, en primera persona, MENOS de 240 caracteres en total. " +
+  "Sin hashtags, sin enlaces, sin comillas externas, como mucho un emoji. " +
+  "Devuelve SOLO el texto de la historia — sin preámbulo ni explicación.";
+
+const SYSTEM_JA =
+  "あなたは、金欠クリエイター向けの笑える応援ページ（No Money というサイト）に表示される短い「泣ける話」を書きます。" +
+  "トーン：自虐的で、大げさだけど軽く、本当に面白い、自然な日本語（翻訳調にしない）。" +
+  "一人称で2〜3行の短文、合計120文字以内。" +
+  "ハッシュタグ・リンク・外側の引用符は禁止、絵文字は最大1つ。" +
+  "物語本文だけを出力——前置きや説明は不要。";
+
+// per-language system prompt + user-prompt builders, keyed by the 2-letter lang code
+const PROMPTS = {
+  zh: { system: SYSTEM_ZH,
+    rewrite: (label, story) => `我的破产状态是「${label}」。把这段卖惨故事改写得更好笑，保持同样的调调：\n\n${story}`,
+    fresh: (label) => `我的破产状态是「${label}」。给它写一段好笑的卖惨故事。` },
+  es: { system: SYSTEM_ES,
+    rewrite: (label, story) => `Mi estado de pobreza es «${label}». Reescribe esta historia lacrimógena para que sea más graciosa, manteniendo el mismo tono:\n\n${story}`,
+    fresh: (label) => `Mi estado de pobreza es «${label}». Escríbele una historia lacrimógena graciosa.` },
+  ja: { system: SYSTEM_JA,
+    rewrite: (label, story) => `私の破産ステータスは「${label}」です。この泣ける話を、同じトーンのままもっと面白く書き直して：\n\n${story}`,
+    fresh: (label) => `私の破産ステータスは「${label}」です。面白い泣ける話を書いて。` },
+  en: { system: SYSTEM,
+    rewrite: (label, story) => `My broke status is "${label}". Rewrite this sob story to be funnier, keep the same vibe:\n\n${story}`,
+    fresh: (label) => `My broke status is "${label}". Write a funny sob story for it.` },
+};
+
 // Cost-protection backstop. Defaults are deliberately conservative; override in
 // production via env vars (AI_RL_PER_MIN / AI_RL_PER_DAY) so the public ceiling
 // isn't your real one. The WAF rate-limit rule is the hard cap; this is best-effort.
@@ -55,20 +85,15 @@ export async function onRequestPost({ request, env }) {
 
   const label = String(body.label || "").trim().slice(0, 40) || "broke";
   const story = String(body.story || "").trim().slice(0, 240);
-  const zh = String(body.lang || "").toLowerCase().startsWith("zh");
+  const code = String(body.lang || "").toLowerCase().slice(0, 2);
+  const p = PROMPTS[code] || PROMPTS.en;
 
-  const user = zh
-    ? (story
-        ? `我的破产状态是「${label}」。把这段卖惨故事改写得更好笑，保持同样的调调：\n\n${story}`
-        : `我的破产状态是「${label}」。给它写一段好笑的卖惨故事。`)
-    : (story
-        ? `My broke status is "${label}". Rewrite this sob story to be funnier, keep the same vibe:\n\n${story}`
-        : `My broke status is "${label}". Write a funny sob story for it.`);
+  const user = story ? p.rewrite(label, story) : p.fresh(label);
 
   let out;
   try {
     const res = await env.AI.run(MODEL, {
-      messages: [{ role: "system", content: zh ? SYSTEM_ZH : SYSTEM }, { role: "user", content: user }],
+      messages: [{ role: "system", content: p.system }, { role: "user", content: user }],
       max_tokens: 160,
       temperature: 0.9,
     });

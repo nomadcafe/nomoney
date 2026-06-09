@@ -1,7 +1,8 @@
 import "../assets/core.js"; // sets window.NM + window.I18N + loads the stylesheet
 const $ = s => document.querySelector(s);
 const t = (k) => window.I18N.t(k);
-const isZh = () => window.I18N.lang === "zh";
+const lang = () => window.I18N.lang;
+const mustMatch = (host) => t("link.must_match").replace("{host}", host);
 let status = "ramen";
 let storyTouched = false; // becomes true once the user types their own story — then we never auto-overwrite it
 let handleTouched = false; // once the user edits the handle, stop auto-deriving it from the name
@@ -93,7 +94,7 @@ function updateLinkWarn(row, l) {
   const bad = host && l.url && l.url.trim() && NM.brandMismatch(l.kind, l.url);
   let el = row.querySelector(".link-warn");
   if (bad && !el) { el = document.createElement("p"); el.className = "link-warn"; row.appendChild(el); }
-  if (bad) el.textContent = isZh() ? `这个按钮的链接必须指向 ${host}` : `This button must link to ${host}`;
+  if (bad) el.textContent = mustMatch(host);
   else if (el) el.remove();
 }
 function buildLinks() {
@@ -107,7 +108,7 @@ function buildLinks() {
     const row = document.createElement("div");
     row.className = "link-edit";
     const opts = Object.entries(NM.PAYMENT_KINDS).map(([k, v]) =>
-      `<option value="${k}" ${k === l.kind ? "selected" : ""}>${(isZh() && v.zh ? v.zh : v.label).replace(/^[^ ]+ /, "")}</option>`).join("");
+      `<option value="${k}" ${k === l.kind ? "selected" : ""}>${NM.payLabel(k).replace(/^[^ ]+ /, "")}</option>`).join("");
 
     let urlField;
     if (sp.mode === "handle") {
@@ -124,7 +125,7 @@ function buildLinks() {
     const host = NM.brandHostFor(l.kind);
     const mism = sp.mode === "full" && host && l.url && l.url.trim() && NM.brandMismatch(l.kind, l.url);
     const warn = mism
-      ? `<p class="link-warn">${isZh() ? `这个按钮的链接必须指向 ${host}` : `This button must link to ${host}`}</p>`
+      ? `<p class="link-warn">${mustMatch(host)}</p>`
       : "";
 
     row.innerHTML =
@@ -206,9 +207,8 @@ function render() {
     return host ? a + `<p class="link-host">→ ${esc(host)}</p>` : a;
   }).join("");
 
-  const pctLine = isZh() ? `${t("card.lessbroke")} ${pct}%` : `${pct}% ${t("card.lessbroke")}`;
-  const raisedLine = isZh() ? `已筹 $${num(data.raised)} / 目标 $${num(data.goal)} 生存基金`
-                            : `$${num(data.raised)} raised of $${num(data.goal)} survival fund`;
+  const pctLine = NM.pctLine(pct);
+  const raisedLine = NM.raisedLine(data.raised, data.goal);
   $("#preview").className = "page-card theme-" + (st.theme || "clean");
   $("#preview").innerHTML = `
     <div class="avatar">${esc(data.emoji || st.emoji)}</div>
@@ -278,7 +278,7 @@ $("#aiBtn").onclick = async (e) => {
     $("#f-story").value = text.slice(0, 240);
     storyTouched = true;            // keep the AI line; don't let a status switch overwrite it
     toast(t("toast.ai_done"));
-  } else if (isZh()) {              // zh: no curated EN rotation — fall back to the localized status story
+  } else if (lang() !== "en") {     // non-en: no curated EN rotation — fall back to the localized status story
     $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
     toast(limited ? t("toast.ai_rate") : t("toast.ai_punch"));
   } else {
@@ -305,7 +305,7 @@ const PERSONA_NAMES = ["Mira", "Kai", "Sol", "Devon", "Aria", "Remy", "Nico", "T
 const pick = a => a[Math.floor(Math.random() * a.length)];
 $("#surprise").onclick = () => {
   status = pick(NM.STATUS_ORDER);
-  $("#f-story").value = isZh() ? NM.locStatus(NM.STATUSES[status]).story : pick(AI_LINES[status] || AI_LINES.ramen);
+  $("#f-story").value = lang() !== "en" ? NM.locStatus(NM.STATUSES[status]).story : pick(AI_LINES[status] || AI_LINES.ramen);
   storyTouched = true;
   const nm = pick(PERSONA_NAMES);
   $("#f-name").value = nm;
@@ -340,7 +340,7 @@ async function publish() {
   const offBrand = data.links.find(l => NM.brandMismatch(l.kind, l.url));
   if (offBrand) {
     const host = NM.brandHostFor(offBrand.kind);
-    toast(isZh() ? `这个按钮的链接必须指向 ${host}` : `That button must link to ${host}`);
+    toast(mustMatch(host));
     buildLinks();           // surface the inline warning on the offending row
     publishing = false;
     return;
@@ -356,7 +356,7 @@ async function publish() {
   try {
     const img = $("#shareCanvas").toDataURL("image/png");
     const score = NM.brokeScore(data).score;
-    const title = isZh() ? `${data.name} 破产 ${score}% · No Money` : `${data.name} is ${score}% broke · No Money`;
+    const title = NM.pageTitle(data.name, score);
     const meta = { title, desc: NM.shareText(data) };
     const payload = { data, img, meta };
     if (editing) { payload.slug = editingSlug; payload.editToken = editToken; }
@@ -498,7 +498,7 @@ function showResumeBar() {
 })();
 
 // language toggle + re-render dynamic content on switch
-$("#langToggle").onclick = () => window.I18N.setLang(isZh() ? "en" : "zh");
+$("#langToggle").onclick = () => window.I18N.cycleLang();
 window.addEventListener("langchange", () => {
   if (!storyTouched && !editingSlug) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
   buildChips(); buildEmoji(); buildLinks(); render();
