@@ -13,7 +13,8 @@ export function isEmptyPage(d) {
 
 // The compact record stored per page in the "pages:recent" index.
 // createdAt/updatedAt are null for legacy pages saved before timestamps existed.
-export function indexEntry(slug, d, m) {
+// msgs is the support-message count — the only organic "this page has traction" signal.
+export function indexEntry(slug, d, m, msgs = 0) {
   d = d || {};
   m = m || {};
   return {
@@ -24,5 +25,19 @@ export function indexEntry(slug, d, m) {
     createdAt: m.createdAt || null,
     updatedAt: m.updatedAt || null,
     empty: isEmptyPage(d),
+    msgs: Number(msgs) || 0,
   };
+}
+
+// Best-effort patch of one page's index entry in place (no full rebuild).
+// Keeps the live message count fresh as messages are posted/deleted.
+export async function patchIndexEntry(env, slug, patch) {
+  try {
+    const recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]");
+    if (!Array.isArray(recent)) return;
+    const i = recent.findIndex(r => r && r.slug === slug);
+    if (i < 0) return;                    // page not in the index — skip (rebuild will catch it)
+    recent[i] = { ...recent[i], ...patch };
+    await env.PAGES.put("pages:recent", JSON.stringify(recent));
+  } catch (e) { /* index is best-effort */ }
 }

@@ -104,10 +104,15 @@ export async function onRequestPost({ request, env }) {
   // maintain the recent/activity index for /admin — on create AND edit, so the
   // index reflects real activity. Best-effort; admin can also rebuild from KV.
   try {
+    // carry over the page's message count (only edits can have any; new pages have 0)
+    let msgCount = 0;
+    if (isEdit) {
+      try { const ma = JSON.parse((await env.PAGES.get("msg:" + slug)) || "[]"); msgCount = Array.isArray(ma) ? ma.length : 0; } catch {}
+    }
     let recent = [];
     try { recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]"); } catch {}
     recent = (Array.isArray(recent) ? recent : []).filter(r => r && r.slug !== slug);
-    recent.unshift(indexEntry(slug, data, meta));   // newest activity first
+    recent.unshift(indexEntry(slug, data, meta, msgCount));   // newest activity first
     if (recent.length > 1000) recent = recent.slice(0, 1000);
     await env.PAGES.put("pages:recent", JSON.stringify(recent));
   } catch (e) { /* index is best-effort */ }

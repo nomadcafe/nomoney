@@ -4,6 +4,8 @@
 //   POST /api/msgs  { slug, editToken, del: <id> }  -> owner deletes a message
 // KV: "msg:"+slug -> JSON array (newest first). Page must exist.
 
+import { patchIndexEntry } from "../_page.js";
+
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
 const MAX_TEXT = 140;
 const MAX_NAME = 24;
@@ -47,6 +49,7 @@ export async function onRequestPost({ request, env }) {
     if (!page || page.t !== body.editToken) return json({ error: "forbidden" }, 403);
     arr = arr.filter(m => m.id !== String(body.del));
     await env.PAGES.put(key, JSON.stringify(arr));
+    await patchIndexEntry(env, slug, { msgs: arr.length });   // keep admin count live
     return json({ ok: true, messages: arr });
   }
 
@@ -60,5 +63,6 @@ export async function onRequestPost({ request, env }) {
   arr.unshift(msg);                 // newest first
   if (arr.length > MAX_MSGS) arr = arr.slice(0, MAX_MSGS);
   await env.PAGES.put(key, JSON.stringify(arr));
+  await patchIndexEntry(env, slug, { msgs: arr.length });   // keep admin count live
   return json({ ok: true, message: msg });
 }

@@ -39,10 +39,12 @@
       <h2>Pages <span id="recentCount" class="admin-muted"></span></h2>
       <button class="btn btn-ghost btn-sm" id="rebuild" title="Scan KV and rebuild the list">↻ Rebuild</button>
     </div>
+    <p id="recentSummary" class="admin-hint"></p>
     <div class="admin-row" style="margin-bottom:12px">
       <select id="sortBy" class="admin-select">
         <option value="recent">Newest activity</option>
-        <option value="stale">Oldest activity (reclaim candidates)</option>
+        <option value="msgs">Most messages (alive)</option>
+        <option value="stale">Oldest activity (dormant)</option>
         <option value="created">Newest created</option>
       </select>
       <label class="admin-check"><input type="checkbox" id="onlyEmpty" /> Empty only</label>

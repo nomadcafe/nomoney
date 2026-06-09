@@ -71,14 +71,29 @@ function sortedFiltered() {
   let list = allRecent.slice();
   if ($("#onlyEmpty").checked) list = list.filter(p => p.empty);
   const sort = $("#sortBy").value;
-  const key = sort === "created" ? "createdAt" : "updatedAt";
-  // unknown timestamps sort to the bottom regardless of direction
-  const val = p => p[key] ? Date.parse(p[key]) : (sort === "stale" ? Infinity : -Infinity);
-  list.sort((a, b) => sort === "stale" ? val(a) - val(b) : val(b) - val(a));
+  if (sort === "msgs") {
+    list.sort((a, b) => (b.msgs || 0) - (a.msgs || 0));
+  } else {
+    const key = sort === "created" ? "createdAt" : "updatedAt";
+    // unknown timestamps sort to the bottom regardless of direction
+    const val = p => p[key] ? Date.parse(p[key]) : (sort === "stale" ? Infinity : -Infinity);
+    list.sort((a, b) => sort === "stale" ? val(a) - val(b) : val(b) - val(a));
+  }
   return list;
 }
 
+function renderSummary() {
+  const el = $("#recentSummary");
+  const n = allRecent.length;
+  if (!n) { el.textContent = ""; return; }
+  const empty = allRecent.filter(p => p.empty).length;
+  const stale = allRecent.filter(p => { const d = daysSince(p.updatedAt); return d != null && d >= STALE_DAYS; }).length;
+  const alive = allRecent.filter(p => (p.msgs || 0) > 0).length;
+  el.textContent = `${n} pages · ${alive} with messages · ${empty} empty · ${stale} dormant (${STALE_DAYS}d+) · ${onWall.size} on wall`;
+}
+
 function renderRecent() {
+  renderSummary();
   const el = $("#recentList");
   const list = sortedFiltered();
   $("#recentCount").textContent = allRecent.length ? `(${list.length}${list.length !== allRecent.length ? ` of ${allRecent.length}` : ""})` : "";
@@ -87,6 +102,7 @@ function renderRecent() {
     const edited = daysSince(p.updatedAt);
     const stale = edited != null && edited >= STALE_DAYS;
     const badges =
+      ((p.msgs || 0) > 0 ? `<span class="admin-tag admin-tag-live">💬 ${p.msgs}</span>` : "") +
       (p.empty ? `<span class="admin-tag admin-tag-warn">empty</span>` : "") +
       (stale ? `<span class="admin-tag">stale ${relTime(p.updatedAt)}</span>` : "");
     const meta = p.createdAt || p.updatedAt

@@ -80,7 +80,9 @@ export async function onRequestPost({ request, env }) {
         const raw = await env.PAGES.get(slug);
         if (!raw) continue;
         let st; try { st = JSON.parse(raw); } catch { continue; }
-        entries.push(indexEntry(slug, st.d || {}, st.m || {}));
+        let msgs = 0;
+        try { const ma = JSON.parse((await env.PAGES.get("msg:" + slug)) || "[]"); msgs = Array.isArray(ma) ? ma.length : 0; } catch {}
+        entries.push(indexEntry(slug, st.d || {}, st.m || {}, msgs));
       }
       cursor = res.list_complete ? null : res.cursor;
     } while (cursor);
