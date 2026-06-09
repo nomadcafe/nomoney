@@ -61,9 +61,17 @@ function renderFunnel() {
   if (!v && !c && !creates) { box.style.display = "none"; return; }
   box.style.display = "";
   const rate = v ? Math.round((c / v) * 100) : 0;
+  // momentum: pages created in the last 7 days (legacy pages without a timestamp are skipped)
+  const new7 = allRecent.filter(p => { const d = daysSince(p.createdAt); return d != null && d < 7; }).length;
   const chip = (n, label) => `<span class="funnel-chip"><b>${n.toLocaleString()}</b><span>${label}</span></span>`;
   $("#funnelRow").innerHTML =
-    chip(v, "visits") + chip(c, `“Make mine” · ${rate}%`) + chip(creates, "pages created");
+    chip(v, "visits") + chip(c, `“Make mine” · ${rate}%`) + chip(creates, "pages created") + chip(new7, "new · last 7d");
+
+  // surface what's actually spreading, so you know which page to amplify/feature
+  const top = allRecent.filter(p => (p.v || 0) > 0).sort((a, b) => (b.v || 0) - (a.v || 0))[0];
+  $("#funnelBest").innerHTML = top
+    ? `🔥 Spreading best: <b>${esc(top.name || top.slug)}</b> <span class="admin-muted">no.money/${esc(top.slug)}</span> — ${top.v} visits${top.v ? `, ${Math.round((top.c || 0) / top.v * 100)}% make-mine` : ""}`
+    : "";
   $("#funnelHint").textContent =
     "Click-through (per visit) = how shareable the page is. Pages created = the loop's output. Counts are directional, not exact.";
 }
@@ -90,6 +98,8 @@ function renderFeatured(featured) {
 function sortedFiltered() {
   let list = allRecent.slice();
   if ($("#onlyEmpty").checked) list = list.filter(p => p.empty);
+  const q = $("#searchBox").value.trim().toLowerCase();
+  if (q) list = list.filter(p => (p.name || "").toLowerCase().includes(q) || (p.slug || "").toLowerCase().includes(q));
   const sort = $("#sortBy").value;
   if (sort === "views") {
     list.sort((a, b) => (b.v || 0) - (a.v || 0));
@@ -123,9 +133,10 @@ function renderRecent() {
   el.innerHTML = list.map(p => {
     const edited = daysSince(p.updatedAt);
     const stale = edited != null && edited >= STALE_DAYS;
+    const ctaRate = (p.v || 0) > 0 ? Math.round((p.c || 0) / p.v * 100) : null;
     const badges =
-      ((p.v || 0) > 0 ? `<span class="admin-tag" title="page views">👁 ${p.v}</span>` : "") +
-      ((p.c || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="“Make mine” clicks">↗ ${p.c}</span>` : "") +
+      ((p.v || 0) > 0 ? `<span class="admin-tag" title="visits">👁 ${p.v}</span>` : "") +
+      ((p.c || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="“Make mine” clicks · click-through">↗ ${p.c} · ${ctaRate}%</span>` : "") +
       ((p.msgs || 0) > 0 ? `<span class="admin-tag admin-tag-live">💬 ${p.msgs}</span>` : "") +
       (p.empty ? `<span class="admin-tag admin-tag-warn">empty</span>` : "") +
       (stale ? `<span class="admin-tag">stale ${relTime(p.updatedAt)}</span>` : "");
@@ -140,6 +151,7 @@ function renderRecent() {
         <span class="admin-meta">${esc(meta)}</span>
       </span>
       <span class="admin-acts">
+        <button class="btn btn-ghost btn-sm" data-copy="${esc(p.slug)}" title="copy link">🔗</button>
         <a class="btn btn-ghost btn-sm" href="/${esc(p.slug)}" target="_blank" rel="noopener" title="open">↗</a>
         ${onWall.has(p.slug) ? `<button class="btn btn-ghost btn-sm" disabled>On wall ✓</button>` : `<button class="btn btn-primary btn-sm" data-add="${esc(p.slug)}">Add</button>`}
         <button class="btn btn-ghost btn-sm admin-del" data-del="${esc(p.slug)}" title="delete page permanently">🗑</button>
@@ -148,6 +160,10 @@ function renderRecent() {
   }).join("");
   el.querySelectorAll("[data-add]").forEach(b => b.onclick = () => act({ add: b.dataset.add }));
   el.querySelectorAll("[data-del]").forEach(b => b.onclick = () => del(b.dataset.del));
+  el.querySelectorAll("[data-copy]").forEach(b => b.onclick = async () => {
+    try { await navigator.clipboard.writeText(`${location.origin}/${b.dataset.copy}`); toast("Link copied"); }
+    catch { toast("Copy failed"); }
+  });
 }
 
 async function del(slug) {
@@ -191,6 +207,8 @@ $("#addSlug").addEventListener("keydown", e => { if (e.key === "Enter") $("#addS
 $("#logout").onclick = () => { token = ""; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} $("#adminToken").value = ""; showTokenBox("Token forgotten"); };
 $("#sortBy").onchange = renderRecent;
 $("#onlyEmpty").onchange = renderRecent;
+$("#searchBox").oninput = renderRecent;
+$("#refresh").onclick = () => { toast("Refreshing…"); load(); };
 $("#rebuild").onclick = async () => {
   const btn = $("#rebuild"); btn.disabled = true; btn.textContent = "Scanning…";
   const res = await api({ rebuild: true });

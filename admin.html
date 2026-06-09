@@ -28,6 +28,7 @@
     <div class="admin-card" id="funnel" style="display:none">
       <h2 style="margin-top:0">Viral loop</h2>
       <div class="funnel-row" id="funnelRow"></div>
+      <div class="funnel-best" id="funnelBest"></div>
       <p class="admin-hint" id="funnelHint"></p>
     </div>
 
@@ -43,10 +44,14 @@
 
     <div class="admin-head" style="margin-top:28px">
       <h2>Pages <span id="recentCount" class="admin-muted"></span></h2>
-      <button class="btn btn-ghost btn-sm" id="rebuild" title="Scan KV and rebuild the list">↻ Rebuild</button>
+      <span class="admin-acts">
+        <button class="btn btn-ghost btn-sm" id="refresh" title="Reload stats (fast)">↻ Refresh</button>
+        <button class="btn btn-ghost btn-sm" id="rebuild" title="Full scan of KV — slower, finds pages missing from the index">⟳ Rebuild</button>
+      </span>
     </div>
     <p id="recentSummary" class="admin-hint"></p>
     <div class="admin-row" style="margin-bottom:12px">
+      <input type="search" id="searchBox" placeholder="Search name or slug…" autocomplete="off" />
       <select id="sortBy" class="admin-select">
         <option value="recent">Newest activity</option>
         <option value="views">Most viewed</option>
