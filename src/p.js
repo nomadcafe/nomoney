@@ -42,7 +42,9 @@ function render() {
     const kind = NM.brandMismatch(k0, l.url) ? "custom" : k0;
     const k = NM.PAYMENT_KINDS[kind] || NM.PAYMENT_KINDS.custom;
     const label = (isZh() && l.zh) ? l.zh : (l.label || NM.payLabel(kind));   // demos carry zh labels; user pages keep their own
-    return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener">${esc(label)}</a>`;
+    // these are visitor-clickable, user-submitted outbound links: nofollow+ugc so public
+    // pages can't be farmed for SEO backlinks; noreferrer hides where the tipper came from
+    return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener noreferrer nofollow ugc">${esc(label)}</a>`;
   }).join("");
 
   const raisedLine = isZh()
