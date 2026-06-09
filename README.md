@@ -1,12 +1,14 @@
 # No Money 💸
 
+**English** · [中文](README.zh.md) · [日本語](README.ja.md) · [Español](README.es.md)
+
 **Make being broke official.** No Money turns "I'm broke" into a shareable meme: pick your
 *broke status*, drop your tip links, and post a meme-ready card with a computed **Broke Score**.
 No signup, no database of users, free.
 
 > I'm broke, but make it funny.
 
-🔗 **Live:** [no.money](https://no.money) · 🌐 **English / 中文** · ⚡ runs on Cloudflare's edge
+🔗 **Live:** [no.money](https://no.money) · 🌐 **English / Español / 日本語 / 中文** · ⚡ runs on Cloudflare's edge
 
 Tip links (PayPal, Ko-fi, crypto, Stripe…) are external and go **straight to you** — No Money
 never touches the money, takes no cut, and stores no payment details. It's a meme tipping page
@@ -23,7 +25,7 @@ experiment in how far you can get with **no accounts, no user database, and no s
 - **No accounts.** A page is just a shareable URL: `no.money/<handle>`. No login, no password, no profile table.
 - **Editing without an account.** Edits are authorized by a *capability link* (an unguessable edit token), not a session — own the link, own the page.
 - **The share image is the actual product.** One tap renders a meme card on a `<canvas>` and uploads it as the page's social preview. The whole point is the thing you post, not the page itself.
-- **Bilingual by design.** English / 中文 with *localized humor*, not literal translation — each broke persona has its own native-language punchlines. Auto-detects the browser; toggle anytime.
+- **Multilingual by design.** English / Español / 日本語 / 中文 with *localized humor*, not literal translation — each broke persona has its own native-language punchlines. Auto-detects the browser; switch anytime from the 🌐 picker.
 - **Cheap and boring to operate.** A static front end + a handful of edge functions + one key-value store. No VM, no SQL, no cron.
 
 ## Stack
