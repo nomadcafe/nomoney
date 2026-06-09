@@ -159,6 +159,11 @@ initMessages();
 // fire-and-forget beacon so it never blocks render or the CTA's navigation.
 function hit(ev) {
   if (!isVanity) return;               // demos have no slug — nothing to attribute
+  // once per tab-session per page+event: a refresh / back-button / double-click doesn't
+  // re-count, so the funnel reads ~per-session (closer to a real conversion rate) rather
+  // than raw pageviews. Pure client-side — costs no KV write. If storage is blocked we
+  // fall through and still send (slight over-count beats losing the signal entirely).
+  try { const k = "nm:hit:" + ev + ":" + slug; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch (e) {}
   try {
     const body = JSON.stringify({ slug, ev });
     if (navigator.sendBeacon) navigator.sendBeacon("/api/hit", new Blob([body], { type: "application/json" }));

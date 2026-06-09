@@ -1,8 +1,9 @@
 // POST /api/hit  { slug, ev }  ev ∈ "view" | "cta"  ->  { ok: true }
 // Viral-loop instrumentation. The ONLY metric that matters here (per ROADMAP) is
 // shareability, and at the no-account stage we otherwise have no way to see it.
-// We count, per page:
-//   v = real human page views        (fired on load from /<slug>, NOT demos, NOT the owner)
+// We count, per page (deduped client-side to once per tab-session per event, so v/c
+// read ~per-visit rather than raw pageviews — see hit() in src/p.js):
+//   v = human visits                  (fired on load from /<slug>, NOT demos, NOT the owner)
 //   c = "Make mine →" CTA clicks      (the viral-loop trigger)
 // Creates (the loop's output) are counted separately in save.js (stat:creates).
 //

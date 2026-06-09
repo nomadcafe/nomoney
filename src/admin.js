@@ -63,9 +63,9 @@ function renderFunnel() {
   const rate = v ? Math.round((c / v) * 100) : 0;
   const chip = (n, label) => `<span class="funnel-chip"><b>${n.toLocaleString()}</b><span>${label}</span></span>`;
   $("#funnelRow").innerHTML =
-    chip(v, "page views") + chip(c, `“Make mine” clicks · ${rate}%`) + chip(creates, "pages created");
+    chip(v, "visits") + chip(c, `“Make mine” · ${rate}%`) + chip(creates, "pages created");
   $("#funnelHint").textContent =
-    "Click-through = how shareable the page is. Pages created = the loop's output. Counts are directional, not exact.";
+    "Click-through (per visit) = how shareable the page is. Pages created = the loop's output. Counts are directional, not exact.";
 }
 
 function renderFeatured(featured) {
