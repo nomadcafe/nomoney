@@ -104,12 +104,16 @@ const PAYMENT_KINDS = {
   coffee:  { label: "☕ Send emergency coffee", zh: "☕ 来杯救命咖啡",    cls: "alt", ex: "https://buymeacoffee.com/you" },
   paypal:  { label: "💸 PayPal me",            zh: "💸 用 PayPal 打赏",  cls: "alt", ex: "https://paypal.me/you" },
   kofi:    { label: "❤️ Ko-fi",                zh: "❤️ Ko-fi",           cls: "alt", ex: "https://ko-fi.com/you" },
-  bmc:     { label: "☕ Buy Me a Coffee",       zh: "☕ Buy Me a Coffee", cls: "alt", ex: "https://buymeacoffee.com/you" },
   stripe:  { label: "💳 Card / Stripe",        zh: "💳 刷卡 / Stripe",   cls: "alt", ex: "https://buy.stripe.com/xxxxxx" },
   crypto:  { label: "🪙 Crypto wallet",         zh: "🪙 加密钱包",        cls: "alt", ex: "0x… or your wallet address" },
   wise:    { label: "🌍 Wise",                 zh: "🌍 Wise",            cls: "alt", ex: "https://wise.com/pay/me/you" },
   custom:  { label: "🔗 Support link",          zh: "🔗 打赏链接",        cls: "alt", ex: "https://your-link.com" },
 };
+
+/* retired kinds → their canonical replacement, so old pages keep a sensible button.
+   "bmc" was a duplicate of "coffee" (same icon + buymeacoffee.com) and was removed. */
+const KIND_ALIAS = { bmc: "coffee" };
+const canonKind = k => KIND_ALIAS[k] || k || "custom";
 
 /* localize a status to the current language (zh overrides label/tagline/story/risk) */
 function locStatus(st) {
@@ -325,4 +329,4 @@ function mixHex(a, b, t) {
 }
 
 /* expose */
-window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, brokeScore, pctOf, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow };
+window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, brokeScore, pctOf, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow };

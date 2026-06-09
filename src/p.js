@@ -38,7 +38,8 @@ function render() {
   const links = data.links.map(l => {
     // never show a brand the link doesn't actually go to (protects pages saved before
     // the rule existed, or via a hand-crafted API call) — fall back to a generic button
-    const kind = NM.brandMismatch(l.kind, l.url) ? "custom" : l.kind;
+    const k0 = NM.canonKind(l.kind);
+    const kind = NM.brandMismatch(k0, l.url) ? "custom" : k0;
     const k = NM.PAYMENT_KINDS[kind] || NM.PAYMENT_KINDS.custom;
     const label = (isZh() && l.zh) ? l.zh : (l.label || NM.payLabel(kind));   // demos carry zh labels; user pages keep their own
     return `<a class="${k.cls}" href="${esc(NM.safeUrl(l.url))}" target="_blank" rel="noopener">${esc(label)}</a>`;

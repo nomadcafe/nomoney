@@ -214,7 +214,7 @@ function restoreDraft() {
     if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
     if (typeof d.emoji === "string") emoji = d.emoji;
     if (Array.isArray(d.links) && d.links.length) {
-      links = d.links.map(l => ({ kind: l.kind || "custom", url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
+      links = d.links.map(l => ({ kind: NM.canonKind(l.kind), url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
     }
     storyTouched = !!d.storyTouched;
     handleTouched = !!d.handleTouched;
@@ -375,7 +375,7 @@ async function loadForEdit(slug, t2) {
   $("#f-raised").value = d.raised != null ? d.raised : "";
   if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
   emoji = typeof d.emoji === "string" ? d.emoji : "";
-  if (Array.isArray(d.links) && d.links.length) links = d.links.map(l => ({ kind: l.kind || "custom", url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
+  if (Array.isArray(d.links) && d.links.length) links = d.links.map(l => ({ kind: NM.canonKind(l.kind), url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
   storyTouched = true;
   let token = t2; try { token = token || localStorage.getItem("nm:edit:" + slug); } catch (e) {}
   enterEditMode(slug, token);

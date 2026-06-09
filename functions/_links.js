@@ -6,10 +6,12 @@
 // a phishing vector. So branded kinds must link to that brand's own hosts. Generic
 // kinds (ramen/coffee/custom) and non-URL kinds (crypto wallet) stay free-form.
 
-export const KNOWN_KINDS = ["ramen", "coffee", "paypal", "kofi", "bmc", "stripe", "crypto", "wise", "custom"];
+export const KNOWN_KINDS = ["ramen", "coffee", "paypal", "kofi", "stripe", "crypto", "wise", "custom"];
+
+// retired kinds → canonical replacement (mirrors canonKind in assets/core.js)
+const KIND_ALIAS = { bmc: "coffee" };
 
 export const BRAND_HOSTS = {
-  bmc:    ["buymeacoffee.com"],
   paypal: ["paypal.me", "paypal.com"],
   kofi:   ["ko-fi.com"],
   stripe: ["stripe.com"],          // also covers buy./checkout. subdomains
@@ -58,7 +60,8 @@ export function sanitizeLinks(links) {
     if (!l || typeof l !== "object") continue;
     const url = String(l.url || "").trim();
     if (!url || !safeScheme(url)) continue;
-    let kind = KNOWN_KINDS.includes(l.kind) ? l.kind : "custom";
+    const aliased = KIND_ALIAS[l.kind] || l.kind;
+    let kind = KNOWN_KINDS.includes(aliased) ? aliased : "custom";
     if (brandMismatch(kind, url)) kind = "custom";   // can't wear a brand it doesn't link to
     const link = { kind, url };
     if (typeof l.label === "string" && l.label.trim()) link.label = l.label.trim().slice(0, 40);
