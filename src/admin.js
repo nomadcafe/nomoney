@@ -30,8 +30,14 @@ let creates = 0;      // global pages-created counter (stat:creates)
 let onWall = new Set();
 
 async function api(body) {
-  const r = await fetch("/api/wall", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, ...body }) });
-  return { ok: r.ok, status: r.status, json: await r.json().catch(() => ({})) };
+  // never let a network blip become an unhandled rejection — callers only check .ok/.status,
+  // so a thrown fetch would otherwise fail silently (and strand the Rebuild button on "Scanning…").
+  try {
+    const r = await fetch("/api/wall", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, ...body }) });
+    return { ok: r.ok, status: r.status, json: await r.json().catch(() => ({})) };
+  } catch (e) {
+    return { ok: false, status: 0, json: {} };
+  }
 }
 
 function showTokenBox(msg) {
@@ -176,7 +182,14 @@ async function del(slug) {
   if (res.status === 403) { showTokenBox("Token rejected"); return; }
   if (!res.ok) { toast("Delete failed"); return; }
   toast(`Deleted ${slug}`);
-  load();
+  // drop it locally rather than refetching the whole index; the funnel totals are summed
+  // from allRecent, so re-render those too.
+  allRecent = allRecent.filter(p => p.slug !== slug);
+  const featured = Array.isArray(res.json.featured) ? res.json.featured : [...onWall].filter(x => x !== slug);
+  onWall = new Set(featured);
+  renderFeatured(featured);
+  renderFunnel();
+  renderRecent();
 }
 
 async function act(body) {
@@ -184,7 +197,12 @@ async function act(body) {
   if (res.status === 403) { showTokenBox("Token rejected"); return; }
   if (!res.ok) { toast("Failed — try again"); return; }
   toast("Saved");
-  load();
+  // add/remove/reorder only touch the featured list, and the response already carries the
+  // new one — re-render from it instead of refetching the whole index + stats on every click.
+  const featured = res.json.featured || [];
+  onWall = new Set(featured);
+  renderFeatured(featured);
+  renderRecent();            // flip the affected row's Add ⇄ "On wall ✓"
 }
 
 function reorder(i, dir, featured) {
