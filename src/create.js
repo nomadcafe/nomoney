@@ -287,8 +287,6 @@ function gather() {
     status,
     ...(emoji ? { emoji } : {}),
     story: $("#f-story").value.trim(),
-    goal: Number($("#f-goal").value) || 0,
-    raised: Number($("#f-raised").value) || 0,
     links: links.map(l => {
       const label = (l.label || "").trim();
       return label ? { kind: l.kind, url: l.url, label } : { kind: l.kind, url: l.url };
@@ -307,7 +305,6 @@ function render() {
   $("#storyCount").textContent = $("#f-story").value.length + "/240";
   const st = NM.locStatus(NM.STATUSES[data.status]);
   const bs = NM.brokeScore(data);
-  const pct = NM.pctOf(data);
   const root = document.documentElement;
   root.style.setProperty("--accent", st.accent);
   root.style.setProperty("--accent-soft", hexA(st.accent, 0.1));
@@ -322,8 +319,6 @@ function render() {
     return host ? a + `<p class="link-host">→ ${esc(host)}</p>` : a;
   }).join("");
 
-  const pctLine = NM.pctLine(pct);
-  const raisedLine = NM.raisedLine(data.raised, data.goal);
   $("#preview").className = "page-card theme-" + (st.theme || "clean");
   const avatar = avatarSrc() ? `<img src="${esc(avatarSrc())}" alt="" />` : esc(data.emoji || st.emoji);
   $("#preview").innerHTML = `
@@ -332,11 +327,6 @@ function render() {
     <div class="page-name">${esc(data.name)}</div>
     <div class="page-handle">no.money/${esc(data.handle)}</div>
     <div class="page-story">${esc(data.story || st.story)}</div>
-    <div class="goal-wrap">
-      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${pctLine}</span></div>
-      <div class="goal-bar"><i style="width:${pct}%"></i></div>
-      <div class="goal-sub">${raisedLine}</div>
-    </div>
     <div class="support-btns">${linkHtml}</div>
     <div class="broke-score">
       <div class="bs-top"><span class="bs-label">${t("card.broke_score")}</span><span class="bs-num">${bs.score}<span>/100</span></span></div>
@@ -352,7 +342,7 @@ function saveDraft() {
   try {
     localStorage.setItem("nm:draft", JSON.stringify({
       name: $("#f-name").value, handle: $("#f-handle").value, status, emoji,
-      story: $("#f-story").value, goal: $("#f-goal").value, raised: $("#f-raised").value,
+      story: $("#f-story").value,
       links, storyTouched, handleTouched,
       avatar: avatarData,   // a freshly picked photo survives a refresh (small JPEG data URL)
     }));
@@ -365,8 +355,6 @@ function restoreDraft() {
     if (d.name != null) $("#f-name").value = d.name;
     if (d.handle != null) $("#f-handle").value = d.handle;
     if (d.story != null) $("#f-story").value = d.story;
-    if (d.goal != null) $("#f-goal").value = d.goal;
-    if (d.raised != null) $("#f-raised").value = d.raised;
     if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
     if (typeof d.emoji === "string") emoji = d.emoji;
     if (typeof d.avatar === "string" && d.avatar.startsWith("data:image/")) avatarData = d.avatar;
@@ -415,7 +403,6 @@ $("#f-name").addEventListener("input", () => {
   render();
 });
 $("#f-handle").addEventListener("input", () => { handleTouched = true; render(); });
-["#f-goal", "#f-raised"].forEach(s => { $(s).addEventListener("input", render); });
 
 // 🎲 roll a fresh broke persona — lowers the blank-page barrier
 const PERSONA_EMOJIS = ["", "😭", "🥲", "💀", "🤡", "🐀", "💸", "📉"];
@@ -539,8 +526,6 @@ async function loadForEdit(slug, t2) {
   $("#f-name").value = d.name || "";
   $("#f-handle").value = d.handle || slug;
   $("#f-story").value = d.story || "";
-  $("#f-goal").value = d.goal != null ? d.goal : "";
-  $("#f-raised").value = d.raised != null ? d.raised : "";
   if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
   emoji = typeof d.emoji === "string" ? d.emoji : "";
   avatarData = null; avatarRemoved = false;

@@ -15,7 +15,7 @@ function setAccent(el, accent) {
 function renderHero() {
   const base = { ...NM.DEMOS.ramen, name: "Mira", handle: "mira" };
   const st = NM.locStatus(NM.STATUSES[base.status]);
-  const bs = NM.brokeScore(base), pct = NM.pctOf(base);
+  const bs = NM.brokeScore(base);
   const el = document.getElementById("heroCard");
   el.className = "page-card mock theme-" + (st.theme || "clean");
   setAccent(el, st.accent);
@@ -26,18 +26,12 @@ function renderHero() {
       : (i === 0 ? (base[lang() + "cta"] || NM.payLabel(l.kind)) : NM.payLabel(l.kind));
     return `<a class="${k.cls}">${label}</a>`;
   }).join("");
-  const raised = NM.raisedLine(base.raised, base.goal);
   el.innerHTML = `
     <div class="avatar">${st.emoji}</div>
     <div class="status-pill"><span class="dot"></span>${st.label}</div>
     <div class="page-name">${base.name}</div>
     <div class="page-handle">no.money/${base.handle}</div>
     <div class="page-story">${st.tagline || st.story.split("\n")[0]}</div>
-    <div class="goal-wrap">
-      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${NM.pctLine(pct)}</span></div>
-      <div class="goal-bar"><i style="width:${pct}%"></i></div>
-      <div class="goal-sub">${raised}</div>
-    </div>
     <div class="support-btns">${links}</div>
     <div class="broke-score">
       <div class="bs-top"><span class="bs-label">${t("card.broke_score")}</span><span class="bs-num">${bs.score}<span>/100</span></span></div>
@@ -51,7 +45,7 @@ function renderDemos() {
   grid.innerHTML = "";
   Object.entries(NM.DEMOS).forEach(([key, d]) => {
     const st = NM.locStatus(NM.STATUSES[d.status]);
-    const bs = NM.brokeScore(d), pct = NM.pctOf(d);
+    const bs = NM.brokeScore(d);
     const fl = (d.links && d.links[0]) || null;
     const fk = fl ? (NM.PAYMENT_KINDS[fl.kind] || NM.PAYMENT_KINDS.custom) : null;
     const cta = d[lang() + "cta"]
@@ -67,10 +61,6 @@ function renderDemos() {
       <div class="page-name">${d.name}</div>
       <div class="page-handle">no.money/${d.handle}</div>
       <div class="page-story">${st.tagline || st.story.split("\n")[0]}</div>
-      <div class="goal-wrap">
-        <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${NM.pctLine(pct)}</span></div>
-        <div class="goal-bar"><i style="width:${pct}%"></i></div>
-      </div>
       <div class="demo-cta">${cta}</div>
       <div class="broke-score">
         <div class="bs-top"><span class="bs-label">${t("card.broke_score")}</span><span class="bs-num">${bs.score}<span>/100</span></span></div>
@@ -91,8 +81,7 @@ function renderWall() {
   wallCards.forEach(c => {
     const sp = NM.STATUSES[c.status] ? c.status : "ramen";
     const st = NM.locStatus(NM.STATUSES[sp]);
-    const bs = NM.brokeScore({ status: sp, goal: c.goal, raised: c.raised });
-    const pct = NM.pctOf({ goal: c.goal, raised: c.raised });
+    const bs = NM.brokeScore({ status: sp });
     const cta = lang() === "en"
       ? (c.link && c.link.label ? c.link.label : (c.link ? NM.payLabel(c.link.kind) : NM.payLabel("ramen")))
       : (c.link && c.link.kind ? NM.payLabel(c.link.kind) : NM.payLabel("ramen"));
@@ -111,10 +100,6 @@ function renderWall() {
       <div class="page-name">${esc(c.name)}</div>
       <div class="page-handle">no.money/${esc(c.handle)}</div>
       <div class="page-story">${st.tagline || st.story.split("\n")[0]}</div>
-      <div class="goal-wrap">
-        <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${NM.pctLine(pct)}</span></div>
-        <div class="goal-bar"><i style="width:${pct}%"></i></div>
-      </div>
       <div class="demo-cta">${esc(cta)}</div>
       <div class="broke-score">
         <div class="bs-top"><span class="bs-label">${t("card.broke_score")}</span><span class="bs-num">${bs.score}<span>/100</span></span></div>

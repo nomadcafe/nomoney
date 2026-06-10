@@ -264,14 +264,9 @@ const BANDS = {
 function brokeScore(data) {
   const st = STATUSES[data.status] || STATUSES.ramen;
   let s = st.base;
-  const goal = Number(data.goal) || 0;
-  // bigger ask = more dramatic
-  s += Math.min(14, Math.log10(Math.max(goal, 1)) * 4.2);
-  // a longer sob story scores higher
-  s += Math.min(6, ((data.story || "").length / 80));
-  // visible progress makes you slightly less broke
-  const pct = goal > 0 ? Math.min(1, (Number(data.raised) || 0) / goal) : 0;
-  s -= pct * 16;
+  // a longer sob story scores higher (the only user-driven input now that the
+  // unverifiable goal/raised numbers are gone)
+  s += Math.min(12, ((data.story || "").length / 60));
   s = Math.max(31, Math.min(99, Math.round(s)));
 
   let band;
@@ -285,11 +280,6 @@ function brokeScore(data) {
   return { score: s, band: map ? (map[band] || band) : band, risk: locStatus(st).risk };
 }
 
-function pctOf(data) {
-  const goal = Number(data.goal) || 0;
-  if (goal <= 0) return 0;
-  return Math.min(100, Math.round(((Number(data.raised) || 0) / goal) * 100));
-}
 
 /* ---------------- url safety ---------------- */
 /* page data comes from the URL (attacker-controllable), so support-link hrefs must be
@@ -349,13 +339,6 @@ function lx() { return LEX[curLang()] || LEX.en; }
 
 /* default display name when the page left it blank */
 function someone() { return lx().someoneCard; }
-/* localized "$X raised of $Y survival fund" line under the goal bar */
-function raisedLine(raised, goal) { return lx().raised(raised, goal); }
-/* "X% less broke" — number-first everywhere except zh, which leads with the label */
-function pctLine(pct) {
-  const lab = (window.I18N && window.I18N.t("card.lessbroke")) || "less broke";
-  return curLang() === "zh" ? `${lab} ${pct}%` : `${pct}% ${lab}`;
-}
 /* localized document title for a page (name + broke score) */
 function pageTitle(name, score) { return lx().title(name, score); }
 
@@ -402,7 +385,6 @@ function drawShareImage(canvas, data) {
   const ctx = canvas.getContext("2d");
   const st = locStatus(STATUSES[data.status] || STATUSES.ramen);
   const bs = brokeScore(data);
-  const pct = pctOf(data);
 
   const L = lx();
   const deep = mixHex(st.accent, "#18191c", 0.42); // accent darkened so it's legible as text on light
@@ -455,15 +437,10 @@ function drawShareImage(canvas, data) {
   qLines.forEach((ln, i) => ctx.fillText(ln, 72, 404 + i * 44));
   const afterQuote = 404 + qLines.length * 44;
 
-  // progress bar
-  const barY = Math.max(afterQuote + 18, 478), barW = W - 144;
-  roundRect(ctx, 72, barY, barW, 14, 7); ctx.fillStyle = "#e9e3d8"; ctx.fill();
-  roundRect(ctx, 72, barY, Math.max(14, barW * pct / 100), 14, 7); ctx.fillStyle = st.accent; ctx.fill();
-  ctx.fillStyle = "#6f6a61"; ctx.font = "500 22px ui-monospace, Menlo, monospace";
-  ctx.fillText(L.img.prog(pct, data.goal), 72, barY + 44);
-  ctx.textAlign = "right";
-  ctx.fillStyle = deep; ctx.fillText(bs.band, W - 72, barY + 44);
-  ctx.textAlign = "left";
+  // broke-band line (was a progress bar — dropped: no real money is tracked, and a
+  // fundraiser bar reads as crowdfunding, which this isn't)
+  ctx.fillStyle = deep; ctx.font = "700 30px ui-monospace, Menlo, monospace";
+  ctx.fillText(bs.band, 72, Math.max(afterQuote + 46, 506));
 
   // footer url
   ctx.fillStyle = "#18191c"; ctx.font = "700 30px ui-monospace, Menlo, monospace";
@@ -508,4 +485,4 @@ function mixHex(a, b, t) {
 }
 
 /* expose */
-window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, payPrefix, splitHandle, joinHandle, freeFormHost, brokeScore, pctOf, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow, raisedLine, pctLine, pageTitle, someone };
+window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, payPrefix, splitHandle, joinHandle, freeFormHost, brokeScore, safeUrl, brandMismatch, brandHostFor, drawShareImage, shareText, shareIntents, renderShareRow, pageTitle, someone };

@@ -24,7 +24,6 @@ function defaultLinks(status) {
 function render() {
   const ls = NM.locStatus(st);
   const bs = NM.brokeScore(data);
-  const pct = NM.pctOf(data);
   document.documentElement.style.setProperty("--accent", st.accent);
   document.documentElement.style.setProperty("--accent-soft", hexA(st.accent, 0.1));
   document.documentElement.style.setProperty("--accent-line", hexA(st.accent, 0.45));
@@ -48,8 +47,6 @@ function render() {
     return host ? a + `<p class="link-host">→ ${esc(host)}</p>` : a;
   }).join("");
 
-  const raisedLine = NM.raisedLine(data.raised, data.goal);
-
   document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
   // emoji stays under the photo as a fallback: if /av 404s (e.g. KV not yet
   // propagated right after publish, or the photo was pulled), the img removes
@@ -64,12 +61,6 @@ function render() {
     <div class="page-name">${esc(data.name || NM.someone())}</div>
     <div class="page-handle">no.money/${esc(data.handle || "you")}</div>
     <div class="page-story">${esc(story)}</div>
-
-    <div class="goal-wrap">
-      <div class="goal-row"><span class="label">${t("card.goal")}</span><span class="pct">${NM.pctLine(pct)}</span></div>
-      <div class="goal-bar"><i style="width:${pct}%"></i></div>
-      <div class="goal-sub">${raisedLine}</div>
-    </div>
 
     <div class="support-btns">${links}</div>
 
