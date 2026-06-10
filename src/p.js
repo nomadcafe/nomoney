@@ -110,7 +110,9 @@ function renderMsgSection() {
       <textarea id="mText" maxlength="140" placeholder="${esc(t("msg.text_ph"))}"></textarea>
       <button class="btn btn-primary btn-block" id="mSend">${esc(t("msg.post"))}</button>
     </div>` : "";
-  el.innerHTML = `<h4 class="msg-title">${esc(t("msg.title"))}${messages.length ? ` (${messages.length})` : ""}</h4>${form}<div class="msg-wall" id="msgWall"></div>`;
+  // wall first (social proof pulls people in), form last ("now add yours"). on a cold
+  // empty page the wall renders the "be the first" hint, which sits right above the input.
+  el.innerHTML = `<h4 class="msg-title">${esc(t("msg.title"))}${messages.length ? ` (${messages.length})` : ""}</h4><div class="msg-wall" id="msgWall"></div>${form}`;
   if (isVanity) document.getElementById("mSend").onclick = postMsg;
   renderWall();
 }
