@@ -15,6 +15,14 @@ const MAX_PNG = 900_000;      // ~0.9 MB share image cap
 const MAX_AVATAR = 200_000;   // ~0.2 MB avatar cap (client downscales to a 256px JPEG)
 const MAX_HANDLE = 30;
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
+const CREATE_PER_DAY = 30;    // per-IP daily create cap — generous: catches scripted
+                              // abuse without ever touching real users or event wifi
+const RL_TTL = 172800;        // counters self-expire after 2 days
+
+// magic-byte sniff so a hand-crafted API call can't store non-image bytes that we'd
+// then serve from our own domain (the browser-canvas flows always produce these)
+const isJPEG = (b) => b && b.length > 3 && b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF;
+const isPNG  = (b) => b && b.length > 7 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47;
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -57,10 +65,23 @@ export async function onRequestPost({ request, env }) {
       png = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) png[i] = bin.charCodeAt(i);
     } catch { png = null; }
+    if (png && !isPNG(png)) return json({ error: "bad image" }, 415);
   }
 
   let slug, token, prevMeta = null, prevData = null;
   const isEdit = !!(body.slug && body.editToken);
+
+  // rate-limit creation only — edits need a capability token, so they're not a spam
+  // vector. Best-effort KV counter per IP per day; eventual consistency lets a tight
+  // burst slip, which is fine for a generous abuse cap (not a security boundary).
+  if (!isEdit) {
+    const ip = request.headers.get("CF-Connecting-IP") || "0.0.0.0";
+    const rlKey = `rl:${ip}:${new Date().toISOString().slice(0, 10)}`;
+    let n = 0;
+    try { n = +(await env.PAGES.get(rlKey)) || 0; } catch {}
+    if (n >= CREATE_PER_DAY) return json({ error: "rate limited" }, 429);
+    try { await env.PAGES.put(rlKey, String(n + 1), { expirationTtl: RL_TTL }); } catch {}
+  }
 
   if (isEdit) {
     // EDIT mode — keep the same slug; require a matching token
@@ -109,6 +130,7 @@ export async function onRequestPost({ request, env }) {
       avatarBytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) avatarBytes[i] = bin.charCodeAt(i);
     } catch { avatarBytes = null; }
+    if (avatarBytes && !isJPEG(avatarBytes)) return json({ error: "bad image" }, 415);
   } else if (body.avatar === null) {
     removeAvatar = true;                       // explicit "remove my photo"
   }

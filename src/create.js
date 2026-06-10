@@ -288,6 +288,7 @@ function saveDraft() {
       name: $("#f-name").value, handle: $("#f-handle").value, status, emoji,
       story: $("#f-story").value, goal: $("#f-goal").value, raised: $("#f-raised").value,
       links, storyTouched, handleTouched,
+      avatar: avatarData,   // a freshly picked photo survives a refresh (small JPEG data URL)
     }));
   } catch (e) { /* private mode / quota — ignore */ }
 }
@@ -302,6 +303,7 @@ function restoreDraft() {
     if (d.raised != null) $("#f-raised").value = d.raised;
     if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
     if (typeof d.emoji === "string") emoji = d.emoji;
+    if (typeof d.avatar === "string" && d.avatar.startsWith("data:image/")) avatarData = d.avatar;
     if (Array.isArray(d.links) && d.links.length) {
       links = d.links.map(l => ({ kind: NM.canonKind(l.kind), url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
     }
