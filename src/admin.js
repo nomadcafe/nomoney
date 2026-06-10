@@ -11,6 +11,9 @@ const labelOf = st => (NM.STATUSES[st] ? NM.STATUSES[st].label : st);
 const STALE_DAYS = 30; // not touched in this many days → flagged as a reclaim candidate
 const DAY = 86400e3;
 
+// click-through, clamped: hit("cta") fires even for owners but hit("view") is skipped
+// for them, so c can exceed v on a page the owner remixed — don't show "250%".
+const pct = (a, b) => (b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0);
 function daysSince(iso) { if (!iso) return null; const t = Date.parse(iso); return isNaN(t) ? null : Math.floor((Date.now() - t) / DAY); }
 function relTime(iso) {
   const d = daysSince(iso);
@@ -33,6 +36,7 @@ async function api(body) {
 
 function showTokenBox(msg) {
   $("#tokenBox").style.display = ""; $("#adminBody").style.display = "none";
+  $("#adminToken").focus();
   if (msg) toast(msg);
 }
 
@@ -60,7 +64,7 @@ function renderFunnel() {
   const box = $("#funnel");
   if (!v && !c && !creates) { box.style.display = "none"; return; }
   box.style.display = "";
-  const rate = v ? Math.round((c / v) * 100) : 0;
+  const rate = pct(c, v);
   // momentum: pages created in the last 7 days (legacy pages without a timestamp are skipped)
   const new7 = allRecent.filter(p => { const d = daysSince(p.createdAt); return d != null && d < 7; }).length;
   const chip = (n, label) => `<span class="funnel-chip"><b>${n.toLocaleString()}</b><span>${label}</span></span>`;
@@ -70,7 +74,7 @@ function renderFunnel() {
   // surface what's actually spreading, so you know which page to amplify/feature
   const top = allRecent.filter(p => (p.v || 0) > 0).sort((a, b) => (b.v || 0) - (a.v || 0))[0];
   $("#funnelBest").innerHTML = top
-    ? `🔥 Spreading best: <b>${esc(top.name || top.slug)}</b> <span class="admin-muted">no.money/${esc(top.slug)}</span> — ${top.v} visits${top.v ? `, ${Math.round((top.c || 0) / top.v * 100)}% make-mine` : ""}`
+    ? `🔥 Spreading best: <b>${esc(top.name || top.slug)}</b> <span class="admin-muted">no.money/${esc(top.slug)}</span> — ${top.v} visits${top.v ? `, ${pct(top.c || 0, top.v)}% make-mine` : ""}`
     : "";
   $("#funnelHint").textContent =
     "Click-through (per visit) = how shareable the page is. Pages created = the loop's output. Counts are directional, not exact.";
@@ -133,7 +137,7 @@ function renderRecent() {
   el.innerHTML = list.map(p => {
     const edited = daysSince(p.updatedAt);
     const stale = edited != null && edited >= STALE_DAYS;
-    const ctaRate = (p.v || 0) > 0 ? Math.round((p.c || 0) / p.v * 100) : null;
+    const ctaRate = (p.v || 0) > 0 ? pct(p.c || 0, p.v) : null;
     const badges =
       ((p.v || 0) > 0 ? `<span class="admin-tag" title="visits">👁 ${p.v}</span>` : "") +
       ((p.c || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="“Make mine” clicks · click-through">↗ ${p.c} · ${ctaRate}%</span>` : "") +
@@ -200,6 +204,10 @@ $("#adminToken").addEventListener("keydown", e => { if (e.key === "Enter") $("#u
 $("#addSlugBtn").onclick = () => {
   const v = $("#addSlug").value.trim().toLowerCase();
   if (!/^[a-z0-9-]{2,40}$/.test(v)) { toast("Enter a valid slug"); return; }
+  // the server only checks slug *format*, not existence — a typo becomes a phantom
+  // wall entry that silently shows nothing. warn if it's not a page we know about.
+  if (!allRecent.some(p => p.slug === v) &&
+      !confirm(`no.money/${v} isn't in the index.\n\nAdd it anyway? (If the page doesn't exist it just won't appear on the public wall.)`)) return;
   $("#addSlug").value = "";
   act({ add: v });
 };
@@ -207,12 +215,13 @@ $("#addSlug").addEventListener("keydown", e => { if (e.key === "Enter") $("#addS
 $("#logout").onclick = () => { token = ""; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} $("#adminToken").value = ""; showTokenBox("Token forgotten"); };
 $("#sortBy").onchange = renderRecent;
 $("#onlyEmpty").onchange = renderRecent;
-$("#searchBox").oninput = renderRecent;
+let searchT;
+$("#searchBox").oninput = () => { clearTimeout(searchT); searchT = setTimeout(renderRecent, 120); };
 $("#refresh").onclick = () => { toast("Refreshing…"); load(); };
 $("#rebuild").onclick = async () => {
   const btn = $("#rebuild"); btn.disabled = true; btn.textContent = "Scanning…";
   const res = await api({ rebuild: true });
-  btn.disabled = false; btn.textContent = "↻ Rebuild";
+  btn.disabled = false; btn.textContent = "⟳ Rebuild";
   if (res.status === 403) { showTokenBox("Token rejected"); return; }
   if (!res.ok) { toast("Rebuild failed"); return; }
   allRecent = res.json.recent || [];
