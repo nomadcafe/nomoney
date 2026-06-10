@@ -115,6 +115,8 @@ export async function onRequestPost({ request, env }) {
   // clean the support links: safe schemes, ≤5, and no branded button (PayPal,
   // Ko-fi, …) pointing off-brand — that would let a page spoof a payment provider
   data.links = sanitizeLinks(data.links);
+  // tipping is the whole point — a page with no working link is a wasted share. require one.
+  if (!data.links.length) return json({ error: "no links" }, 400);
 
   // avatar photo — image bytes can't live in the 8 KB page JSON, so they're stored
   // out-of-band at "avatar:"+slug (like the share image at "img:"+slug) and served

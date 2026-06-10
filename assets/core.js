@@ -261,13 +261,27 @@ const BANDS = {
 };
 
 /* ---------------- broke score ---------------- */
+// stable per-page jitter: a chosen-once handle hashes to a fixed number, so two pages
+// with identical inputs still differ — and you can't game it by editing the story.
+function seedJitter(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0);
+}
+
 function brokeScore(data) {
   const st = STATUSES[data.status] || STATUSES.ramen;
-  let s = st.base;
-  // a longer sob story scores higher — the only user-driven input now that the
-  // unverifiable goal/raised numbers are gone, so let it span the full story
-  // length (≤240 chars) for real spread
-  s += Math.min(15, ((data.story || "").length / 16));
+  // the score is meme theatre, not a measurement — but it should read as *composed* of
+  // several signals (status, sob story, how hard you're asking, whether you put your face
+  // on it) instead of "type a longer story = more broke". scaling the base down leaves
+  // headroom so the lower bands are actually reachable rather than everyone landing in the 70s.
+  const story = (data.story || "").trim();
+  const links = Array.isArray(data.links) ? data.links.filter(l => l && l.url && l.url !== "#") : [];
+  let s = st.base * 0.6;                              // status severity, the backbone (≈41–50)
+  s += Math.min(12, story.length / 18);              // a longer sob story, capped so it can't dominate
+  s += Math.min(15, links.length * 3);               // more ways to receive money = more desperate
+  s += data.av ? 5 : 0;                              // put your actual face on a begging page = committed to the bit
+  s += seedJitter(data.handle || data.name || "") % 11;
   s = Math.max(31, Math.min(99, Math.round(s)));
 
   let band;

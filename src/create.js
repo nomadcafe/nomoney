@@ -441,6 +441,14 @@ async function publish() {
     .filter(l => l.url && l.url.trim())                       // don't ship dead buttons (no URL)
     .map(l => ({ ...l, url: NM.safeUrl(normUrl(l.url)) }));   // fix missing https:// + strip unsafe schemes
 
+  // tipping is the whole point — block publishing a page nobody can actually tip on
+  if (!data.links.length) {
+    toast(t("toast.tip_add_link"));
+    buildLinks();           // surface the (empty) links section so they know where to act
+    publishing = false;
+    return;
+  }
+
   // a branded button (PayPal, Ko-fi, …) must actually link to that brand — no spoofing
   const offBrand = data.links.find(l => NM.brandMismatch(l.kind, l.url));
   if (offBrand) {
