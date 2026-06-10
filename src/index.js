@@ -100,8 +100,13 @@ function renderWall() {
     a.className = "page-card demo-card theme-" + (st.theme || "clean");
     a.href = "/" + c.slug;
     setAccent(a, st.accent);
+    // photo if the page has one, else the broke-status emoji (same fallback as the card)
+    const emoji = c.emoji || st.emoji;
+    const avatar = c.av
+      ? `${emoji}<img src="/av/${encodeURIComponent(c.slug)}?v=${encodeURIComponent(c.av)}" alt="" onerror="this.remove()" />`
+      : emoji;
     a.innerHTML = `
-      <div class="avatar">${c.emoji || st.emoji}</div>
+      <div class="avatar">${avatar}</div>
       <div class="status-pill"><span class="dot"></span>${st.label}</div>
       <div class="page-name">${esc(c.name)}</div>
       <div class="page-handle">no.money/${esc(c.handle)}</div>

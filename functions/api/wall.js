@@ -54,6 +54,7 @@ export async function onRequestGet({ env }) {
       handle: d.handle || slug,
       status: d.status || "ramen",
       emoji: typeof d.emoji === "string" ? d.emoji : "",
+      av: typeof d.av === "string" ? d.av : "",
       goal: Number(d.goal) || 0,
       raised: Number(d.raised) || 0,
       link: first ? { kind: first.kind || "custom", label: first.label || "" } : null,
