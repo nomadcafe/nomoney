@@ -13,29 +13,100 @@ let avatarData = null;    // a freshly picked photo as a JPEG data URL, queued t
 let avatarExisting = "";  // URL of an already-saved photo (edit mode) — for preview only
 let avatarRemoved = false; // user cleared a saved photo (so publish sends avatar:null)
 
-const AVATAR_PX = 256;    // photos are center-cropped + downscaled to this square before upload
+const AVATAR_PX = 256;    // exported avatar is a 256px square JPEG (~20–40 KB)
 // what the card should show right now: a new pick wins, else the saved one (unless cleared)
 const avatarSrc = () => avatarData || (avatarRemoved ? "" : avatarExisting);
 
-// load → center-crop to a square → downscale → JPEG data URL (keeps uploads ~20–40 KB)
-function processAvatarFile(file) {
-  return new Promise((resolve, reject) => {
-    if (!file || !/^image\//.test(file.type)) return reject();
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const side = Math.min(img.width, img.height);
-      const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
-      const c = document.createElement("canvas");
-      c.width = c.height = AVATAR_PX;
-      c.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, AVATAR_PX, AVATAR_PX);
-      try { resolve(c.toDataURL("image/jpeg", 0.82)); } catch (e) { reject(); }
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(); };
-    img.src = url;
-  });
+/* ---------- avatar crop modal: pan + zoom, dependency-free ----------
+   The user drags to move and zooms to frame the part of the photo they want
+   inside a circular guide; on confirm the visible square is exported to a
+   256px JPEG. Geometry is tracked in "stage px"; `eff` maps natural px → stage px. */
+const cropStage = $("#cropStage"), cropImg = $("#cropImg"), cropZoom = $("#cropZoom");
+let crop = null;          // { url, w, h, cover, eff, zoom, ox, oy } while the modal is open
+const stageSize = () => cropStage.clientWidth || 280;
+
+function clampCrop() {     // the photo must always cover the whole stage (no gaps)
+  const S = stageSize();
+  crop.ox = Math.min(0, Math.max(S - crop.w * crop.eff, crop.ox));
+  crop.oy = Math.min(0, Math.max(S - crop.h * crop.eff, crop.oy));
 }
+function applyCrop() {
+  cropImg.style.width = (crop.w * crop.eff) + "px";
+  cropImg.style.height = (crop.h * crop.eff) + "px";
+  cropImg.style.left = crop.ox + "px";
+  cropImg.style.top = crop.oy + "px";
+}
+function setZoom(z, fx, fy) {   // zoom around a focal point (slider → center; wheel → cursor)
+  const S = stageSize();
+  fx = fx == null ? S / 2 : fx; fy = fy == null ? S / 2 : fy;
+  const old = crop.eff;
+  crop.zoom = Math.min(3, Math.max(1, z));
+  crop.eff = crop.cover * crop.zoom;
+  crop.ox = fx - (fx - crop.ox) * (crop.eff / old);
+  crop.oy = fy - (fy - crop.oy) * (crop.eff / old);
+  clampCrop(); applyCrop();
+}
+function openCropper(file) {
+  if (!file || !/^image\//.test(file.type)) { toast(t("toast.avatar_big")); return; }
+  const url = URL.createObjectURL(file);
+  const im = new Image();
+  im.onload = () => {
+    if (crop && crop.url) URL.revokeObjectURL(crop.url);
+    $("#cropModal").classList.add("open");     // open first so the stage is measurable
+    const S = stageSize();
+    const cover = S / Math.min(im.width, im.height);
+    crop = { url, w: im.width, h: im.height, cover, eff: cover, zoom: 1,
+             ox: (S - im.width * cover) / 2, oy: (S - im.height * cover) / 2 };
+    cropImg.src = url; cropZoom.value = "1"; applyCrop();
+  };
+  im.onerror = () => { URL.revokeObjectURL(url); toast(t("toast.avatar_big")); };
+  im.src = url;
+}
+function closeCropper() {
+  $("#cropModal").classList.remove("open");
+  if (crop && crop.url) URL.revokeObjectURL(crop.url);
+  crop = null;
+}
+function exportCrop() {     // visible stage square → 256px JPEG (source rect in natural px)
+  const S = stageSize();
+  const c = document.createElement("canvas");
+  c.width = c.height = AVATAR_PX;
+  c.getContext("2d").drawImage(cropImg, -crop.ox / crop.eff, -crop.oy / crop.eff, S / crop.eff, S / crop.eff, 0, 0, AVATAR_PX, AVATAR_PX);
+  return c.toDataURL("image/jpeg", 0.82);
+}
+// drag to pan
+let cropDrag = false, cropLX = 0, cropLY = 0;
+cropStage.addEventListener("pointerdown", (e) => {
+  if (!crop) return;
+  cropDrag = true; cropLX = e.clientX; cropLY = e.clientY;
+  try { cropStage.setPointerCapture(e.pointerId); } catch {}
+});
+cropStage.addEventListener("pointermove", (e) => {
+  if (!cropDrag || !crop) return;
+  crop.ox += e.clientX - cropLX; crop.oy += e.clientY - cropLY;
+  cropLX = e.clientX; cropLY = e.clientY;
+  clampCrop(); applyCrop();
+});
+const cropEnd = (e) => { if (cropDrag) { cropDrag = false; try { cropStage.releasePointerCapture(e.pointerId); } catch {} } };
+cropStage.addEventListener("pointerup", cropEnd);
+cropStage.addEventListener("pointercancel", cropEnd);
+cropZoom.addEventListener("input", () => { if (crop) setZoom(parseFloat(cropZoom.value)); });
+cropStage.addEventListener("wheel", (e) => {
+  if (!crop) return;
+  e.preventDefault();
+  const r = cropStage.getBoundingClientRect();
+  setZoom(crop.zoom * (e.deltaY < 0 ? 1.08 : 0.92), e.clientX - r.left, e.clientY - r.top);
+  cropZoom.value = String(crop.zoom);
+}, { passive: false });
+$("#cropUse").onclick = () => {
+  if (!crop) return;
+  const data = exportCrop();             // export before close (revoke would free the image)
+  closeCropper();
+  avatarData = data; avatarRemoved = false;
+  syncAvatarUI(); render();
+};
+$("#cropCancel").onclick = closeCropper;
+$("#cropModal").onclick = (e) => { if (e.target === $("#cropModal")) closeCropper(); };
 
 function syncAvatarUI() {
   const src = avatarSrc(), thumb = $("#avatarThumb"), im = $("#avatarImg");
@@ -195,16 +266,11 @@ function buildLinks() {
 }
 $("#addLink").onclick = () => { if (links.length < 5) { links.push({ kind: "custom", url: "" }); buildLinks(); render(); } else toast(t("toast.links_max")); };
 
-// avatar photo: pick → downscale locally → preview (upload happens on publish)
-$("#avatarFile").onchange = async (e) => {
+// avatar photo: pick → frame it in the crop modal → preview (upload happens on publish)
+$("#avatarFile").onchange = (e) => {
   const f = e.target.files && e.target.files[0];
   e.target.value = "";                                  // allow re-picking the same file
-  if (!f) return;
-  try {
-    avatarData = await processAvatarFile(f);
-    avatarRemoved = false;
-    syncAvatarUI(); render();
-  } catch { toast(t("toast.avatar_big")); }
+  if (f) openCropper(f);
 };
 $("#avatarRemove").onclick = () => {
   avatarData = null;
