@@ -51,9 +51,13 @@ function render() {
   const raisedLine = NM.raisedLine(data.raised, data.goal);
 
   document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
+  // emoji stays under the photo as a fallback: if /av 404s (e.g. KV not yet
+  // propagated right after publish, or the photo was pulled), the img removes
+  // itself and the broke-status emoji shows through — never a broken-image icon.
+  const emoji = esc(data.emoji || st.emoji);
   const avatar = data.av
-    ? `<img src="/av/${encodeURIComponent(data.handle)}?v=${encodeURIComponent(data.av)}" alt="" />`
-    : esc(data.emoji || st.emoji);
+    ? `${emoji}<img src="/av/${encodeURIComponent(data.handle)}?v=${encodeURIComponent(data.av)}" alt="" onerror="this.remove()" />`
+    : emoji;
   document.getElementById("card").innerHTML = `
     <div class="avatar">${avatar}</div>
     <div class="status-pill"><span class="dot"></span>${esc(ls.label)}</div>

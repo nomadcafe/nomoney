@@ -12,6 +12,7 @@ export async function onRequestGet({ params, env }) {
   return new Response(buf, {
     headers: {
       "content-type": "image/jpeg",
+      "x-content-type-options": "nosniff", // bytes are stored unvalidated — never let a browser sniff them as anything but an image
       "cache-control": "public, max-age=31536000, immutable",
     },
   });
