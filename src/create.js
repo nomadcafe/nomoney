@@ -344,6 +344,9 @@ let draftT = 0;
 function saveDraft() { clearTimeout(draftT); draftT = setTimeout(writeDraft, 250); }
 function writeDraft() {
   draftT = 0;
+  // edit mode = a page that already exists server-side (reachable via the resume bar / edit
+  // link). the draft slot is only for an unsaved NEW page, so don't let an edit clobber it.
+  if (editingSlug) return;
   try {
     localStorage.setItem("nm:draft", JSON.stringify({
       name: $("#f-name").value, handle: $("#f-handle").value, status, emoji,
@@ -519,6 +522,12 @@ async function publish() {
     $("#editUrl").value = location.origin + base + "create.html?edit=" + result.slug + "&t=" + encodeURIComponent(result.editToken);
     enterEditMode(result.slug, result.editToken);
   }
+
+  // a freshly created page is now persisted — it's a real page, no longer a draft. drop the
+  // stored draft (and cancel any pending write) so the next clean visit starts blank, not on
+  // top of the page you just made. (enterEditMode above already set editingSlug, so future
+  // renders won't re-write it — this just clears the stale one.)
+  if (!editing) { clearTimeout(draftT); draftT = 0; try { localStorage.removeItem("nm:draft"); } catch (e) {} }
 
   $(".live-badge").textContent = editing ? t("modal.updated_badge") : t("modal.badge");
   document.querySelector(".modal-live h3").textContent = editing ? t("modal.updated_h3") : t("modal.live_h3");
