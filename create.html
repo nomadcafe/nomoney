@@ -60,6 +60,11 @@
 
       <div class="field">
         <label><span data-i18n="create.avatar">Avatar</span> <span style="color:var(--ink-faint)" data-i18n="create.avatar_hint">(optional — defaults to your broke status)</span></label>
+        <div class="avatar-upload">
+          <div class="avatar-thumb" id="avatarThumb" hidden><img id="avatarImg" alt="" /><button type="button" class="avatar-rm" id="avatarRemove" title="Remove photo" aria-label="Remove photo">×</button></div>
+          <label class="avatar-pick-btn" for="avatarFile" data-i18n="create.avatar_photo">📷 Upload photo</label>
+          <input type="file" id="avatarFile" accept="image/png,image/jpeg,image/webp" hidden />
+        </div>
         <div class="emoji-pick" id="emojiPick"></div>
       </div>
 

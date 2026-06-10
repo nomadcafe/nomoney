@@ -309,6 +309,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
   background: var(--accent-soft, var(--bg-2)); border: 1px solid var(--accent-line, var(--line));
   box-shadow: 0 0 0 6px var(--accent-soft, transparent), 0 14px 34px -12px var(--accent-glow, rgba(0,0,0,0.5));
 }
+.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
 .status-pill {
   display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px;
   padding: 6px 13px; border-radius: 999px; margin-bottom: 16px;
@@ -443,6 +444,14 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .link-edit .link-handle .link-url:focus { border: none; box-shadow: none; }
 
 .counter { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); flex: 0 0 auto; }
+
+/* avatar photo upload */
+.avatar-upload { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.avatar-pick-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 11px; background: #fff; border: 1px solid var(--line); cursor: pointer; font-size: 14px; font-weight: 600; color: var(--ink); transition: border-color .12s ease; }
+.avatar-pick-btn:hover { border-color: var(--ink-faint); }
+.avatar-thumb { position: relative; width: 56px; height: 56px; flex: none; }
+.avatar-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 1px solid var(--line); display: block; }
+.avatar-rm { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--ink); color: #fff; cursor: pointer; font-size: 13px; line-height: 1; display: grid; place-items: center; padding: 0; }
 
 /* avatar emoji picker */
 .emoji-pick { display: flex; flex-wrap: wrap; gap: 8px; }

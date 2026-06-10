@@ -12,6 +12,7 @@ const SUFFIX_CHARS = "abcdefghijkmnpqrstuvwxyz23456789"; // no 0/o/1/l ambiguity
 const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 const MAX_JSON = 8000;        // page JSON cap
 const MAX_PNG = 900_000;      // ~0.9 MB share image cap
+const MAX_AVATAR = 200_000;   // ~0.2 MB avatar cap (client downscales to a 256px JPEG)
 const MAX_HANDLE = 30;
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
 
@@ -58,7 +59,7 @@ export async function onRequestPost({ request, env }) {
     } catch { png = null; }
   }
 
-  let slug, token, prevMeta = null;
+  let slug, token, prevMeta = null, prevData = null;
   const isEdit = !!(body.slug && body.editToken);
 
   if (isEdit) {
@@ -71,6 +72,7 @@ export async function onRequestPost({ request, env }) {
     slug = body.slug;
     token = prev.t;            // keep the original token
     prevMeta = (prev.m && typeof prev.m === "object") ? prev.m : null;
+    prevData = (prev.d && typeof prev.d === "object") ? prev.d : null;
   } else {
     // CREATE mode — vanity slug from the handle; suffix if reserved or taken
     let root = cleanHandle(data.handle);
@@ -93,6 +95,27 @@ export async function onRequestPost({ request, env }) {
   // Ko-fi, …) pointing off-brand — that would let a page spoof a payment provider
   data.links = sanitizeLinks(data.links);
 
+  // avatar photo — image bytes can't live in the 8 KB page JSON, so they're stored
+  // out-of-band at "avatar:"+slug (like the share image at "img:"+slug) and served
+  // by /av/:slug. data.av is a server-owned version flag (a cache-buster for the
+  // immutable /av response); never trust a client-supplied one.
+  delete data.av;
+  const AV_PREFIX = "data:image/jpeg;base64,";
+  let avatarBytes = null, removeAvatar = false;
+  if (typeof body.avatar === "string" && body.avatar.startsWith(AV_PREFIX)) {
+    try {
+      const bin = atob(body.avatar.slice(AV_PREFIX.length));
+      if (bin.length > MAX_AVATAR) return json({ error: "avatar too large" }, 413);
+      avatarBytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) avatarBytes[i] = bin.charCodeAt(i);
+    } catch { avatarBytes = null; }
+  } else if (body.avatar === null) {
+    removeAvatar = true;                       // explicit "remove my photo"
+  }
+  const prevAv = (prevData && typeof prevData.av === "string") ? prevData.av : "";
+  if (avatarBytes) data.av = suffix(6);        // new photo → fresh version
+  else if (!removeAvatar && prevAv) data.av = prevAv;  // untouched on edit → keep it
+
   // timestamps are server-owned (never trusted from the client). createdAt is set
   // once and preserved across edits; updatedAt moves every save.
   const now = new Date().toISOString();
@@ -105,6 +128,8 @@ export async function onRequestPost({ request, env }) {
 
   await env.PAGES.put(slug, jsonStr);
   if (png) await env.PAGES.put("img:" + slug, png);
+  if (avatarBytes) await env.PAGES.put("avatar:" + slug, avatarBytes);
+  else if (removeAvatar) await env.PAGES.delete("avatar:" + slug);
 
   // viral-loop output: count every NEW page (not edits). Cold path — creates are
   // rare next to views, so this single global counter is fine here. Best-effort.
@@ -131,5 +156,5 @@ export async function onRequestPost({ request, env }) {
     await env.PAGES.put("pages:recent", JSON.stringify(recent));
   } catch (e) { /* index is best-effort */ }
 
-  return json({ slug, editToken: token });
+  return json({ slug, editToken: token, av: data.av || null });
 }

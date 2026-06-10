@@ -51,8 +51,11 @@ function render() {
   const raisedLine = NM.raisedLine(data.raised, data.goal);
 
   document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
+  const avatar = data.av
+    ? `<img src="/av/${encodeURIComponent(data.handle)}?v=${encodeURIComponent(data.av)}" alt="" />`
+    : esc(data.emoji || st.emoji);
   document.getElementById("card").innerHTML = `
-    <div class="avatar">${esc(data.emoji || st.emoji)}</div>
+    <div class="avatar">${avatar}</div>
     <div class="status-pill"><span class="dot"></span>${esc(ls.label)}</div>
     <div class="page-name">${esc(data.name || NM.someone())}</div>
     <div class="page-handle">no.money/${esc(data.handle || "you")}</div>

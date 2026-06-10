@@ -120,6 +120,7 @@ export async function onRequestPost({ request, env }) {
     if (!s) return json({ error: "bad slug" }, 400);
     await env.PAGES.delete(s);             // the page itself
     await env.PAGES.delete("img:" + s);    // its share image
+    await env.PAGES.delete("avatar:" + s); // its avatar photo
     await env.PAGES.delete("msg:" + s);    // its support messages
     try {                                  // drop from the activity index
       const recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]");

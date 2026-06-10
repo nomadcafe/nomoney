@@ -9,6 +9,38 @@ let handleTouched = false; // once the user edits the handle, stop auto-deriving
 let emoji = "";           // custom avatar emoji; "" = use the broke status' default
 let editingSlug = null;   // when set, publishing UPDATES this slug instead of creating a new page
 let editToken = null;     // capability token proving edit rights for editingSlug
+let avatarData = null;    // a freshly picked photo as a JPEG data URL, queued to upload
+let avatarExisting = "";  // URL of an already-saved photo (edit mode) — for preview only
+let avatarRemoved = false; // user cleared a saved photo (so publish sends avatar:null)
+
+const AVATAR_PX = 256;    // photos are center-cropped + downscaled to this square before upload
+// what the card should show right now: a new pick wins, else the saved one (unless cleared)
+const avatarSrc = () => avatarData || (avatarRemoved ? "" : avatarExisting);
+
+// load → center-crop to a square → downscale → JPEG data URL (keeps uploads ~20–40 KB)
+function processAvatarFile(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !/^image\//.test(file.type)) return reject();
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+      const c = document.createElement("canvas");
+      c.width = c.height = AVATAR_PX;
+      c.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, AVATAR_PX, AVATAR_PX);
+      try { resolve(c.toDataURL("image/jpeg", 0.82)); } catch (e) { reject(); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+    img.src = url;
+  });
+}
+
+function syncAvatarUI() {
+  const src = avatarSrc(), thumb = $("#avatarThumb"), im = $("#avatarImg");
+  if (src) { im.src = src; thumb.hidden = false; } else { im.removeAttribute("src"); thumb.hidden = true; }
+}
 
 const slugify = s => (s || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "");
 
@@ -163,6 +195,23 @@ function buildLinks() {
 }
 $("#addLink").onclick = () => { if (links.length < 5) { links.push({ kind: "custom", url: "" }); buildLinks(); render(); } else toast(t("toast.links_max")); };
 
+// avatar photo: pick → downscale locally → preview (upload happens on publish)
+$("#avatarFile").onchange = async (e) => {
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";                                  // allow re-picking the same file
+  if (!f) return;
+  try {
+    avatarData = await processAvatarFile(f);
+    avatarRemoved = false;
+    syncAvatarUI(); render();
+  } catch { toast(t("toast.avatar_big")); }
+};
+$("#avatarRemove").onclick = () => {
+  avatarData = null;
+  if (avatarExisting) avatarRemoved = true;             // tell publish to clear the saved one
+  syncAvatarUI(); render();
+};
+
 function gather() {
   const handle = ($("#f-handle").value.trim() || "you").toLowerCase()
     .replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "you";
@@ -210,8 +259,9 @@ function render() {
   const pctLine = NM.pctLine(pct);
   const raisedLine = NM.raisedLine(data.raised, data.goal);
   $("#preview").className = "page-card theme-" + (st.theme || "clean");
+  const avatar = avatarSrc() ? `<img src="${esc(avatarSrc())}" alt="" />` : esc(data.emoji || st.emoji);
   $("#preview").innerHTML = `
-    <div class="avatar">${esc(data.emoji || st.emoji)}</div>
+    <div class="avatar">${avatar}</div>
     <div class="status-pill"><span class="dot"></span>${st.label}</div>
     <div class="page-name">${esc(data.name)}</div>
     <div class="page-handle">no.money/${esc(data.handle)}</div>
@@ -359,6 +409,8 @@ async function publish() {
     const title = NM.pageTitle(data.name, score);
     const meta = { title, desc: NM.shareText(data) };
     const payload = { data, img, meta };
+    if (avatarData) payload.avatar = avatarData;          // new photo to store
+    else if (avatarRemoved) payload.avatar = null;        // clear the saved photo
     if (editing) { payload.slug = editingSlug; payload.editToken = editToken; }
     const res = await fetch(base + "api/save", {
       method: "POST", headers: { "content-type": "application/json" },
@@ -370,6 +422,15 @@ async function publish() {
   btn.textContent = prev; btn.disabled = false; publishing = false;
 
   if (!result || !result.slug) { if (!editing) toast(t("toast.publish_fail")); return; }
+
+  // reconcile local avatar state with what's now stored, so a later Remove in the
+  // same session knows there's a saved photo to clear
+  if (avatarData) {
+    avatarExisting = result.av ? ("/av/" + result.slug + "?v=" + encodeURIComponent(result.av)) : ("/av/" + result.slug);
+    avatarData = null;
+  }
+  avatarRemoved = false;
+  syncAvatarUI();
 
   const url = location.origin + base + result.slug;
   // remember edit rights + switch into edit mode so further saves update the same page
@@ -414,12 +475,14 @@ async function loadForEdit(slug, t2) {
   $("#f-raised").value = d.raised != null ? d.raised : "";
   if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
   emoji = typeof d.emoji === "string" ? d.emoji : "";
+  avatarData = null; avatarRemoved = false;
+  avatarExisting = d.av ? ("/av/" + slug + "?v=" + encodeURIComponent(d.av)) : "";
   if (Array.isArray(d.links) && d.links.length) links = d.links.map(l => ({ kind: NM.canonKind(l.kind), url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
   storyTouched = true;
   let token = t2; try { token = token || localStorage.getItem("nm:edit:" + slug); } catch (e) {}
   enterEditMode(slug, token);
   if (!token) toast(t("toast.no_edit_access"));
-  buildChips(); buildEmoji(); buildLinks(); render();
+  buildChips(); buildEmoji(); buildLinks(); render(); syncAvatarUI();
   document.documentElement.classList.remove("loading-edit"); // reveal the populated form (no default-content flash)
 }
 $("#publish").onclick = publish;
@@ -492,7 +555,7 @@ function showResumeBar() {
   }
   window.I18N.apply();                                   // translate static [data-i18n] text
   document.title = t("title.create");
-  buildChips(); buildEmoji(); buildLinks(); render();    // render defaults/draft first (no blank flash)
+  buildChips(); buildEmoji(); buildLinks(); render(); syncAvatarUI();    // render defaults/draft first (no blank flash)
   if (willEdit) loadForEdit(editSlug, qp.get("t")); // then override async (clears loading-edit when done)
   else showResumeBar();                                  // surface an existing page to keep editing
 })();
@@ -500,7 +563,7 @@ function showResumeBar() {
 // re-render dynamic content on language switch (the picker itself is wired in i18n.js)
 window.addEventListener("langchange", () => {
   if (!storyTouched && !editingSlug) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
-  buildChips(); buildEmoji(); buildLinks(); render();
+  buildChips(); buildEmoji(); buildLinks(); render(); syncAvatarUI();
   applyEditModeText();   // setLang re-applied [data-i18n], which would reset edit-mode header/button
   document.title = t("title.create");
   if ($("#resumeBar").style.display !== "none") showResumeBar();   // refresh banner text in new language
