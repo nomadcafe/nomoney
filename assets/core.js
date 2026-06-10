@@ -117,17 +117,17 @@ const STATUS_ORDER = ["ramen", "rent", "laidoff", "crypto", "student", "startup"
 /* full demo pages used on the landing page (p.html?demo=key).
    curated funny button labels — the buttons ARE part of the joke. */
 const DEMOS = {
-  ramen:   { name: "Mika",  handle: "ramen",         status: "ramen",  goal: 200, raised: 74, zhcta: "🍜 给我加个蛋", escta: "🍜 Ponme un huevo", jacta: "🍜 卵をのせて",
+  ramen:   { name: "Mika",  handle: "ramen",         status: "ramen",  zhcta: "🍜 给我加个蛋", escta: "🍜 Ponme un huevo", jacta: "🍜 卵をのせて",
     links: [{ kind: "ramen", url: "#", label: "🍜 Add an egg to my life", zh: "🍜 给我的泡面加个蛋", es: "🍜 Añade un huevo a mi vida", ja: "🍜 人生に卵を一つ" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#" }] },
-  rent:    { name: "Devon", handle: "rent",          status: "rent",   goal: 850, raised: 310, zhcta: "🏚️ 别让我露宿", escta: "🏚️ Que no acabe en la calle", jacta: "🏚️ 路上に出さないで",
+  rent:    { name: "Devon", handle: "rent",          status: "rent",   zhcta: "🏚️ 别让我露宿", escta: "🏚️ Que no acabe en la calle", jacta: "🏚️ 路上に出さないで",
     links: [{ kind: "custom", url: "#", label: "🏚️ Keep me indoors", zh: "🏚️ 别让我露宿街头", es: "🏚️ Que no acabe en la calle", ja: "🏚️ 路上に出さないで" }, { kind: "paypal", url: "#" }, { kind: "coffee", url: "#" }] },
-  laidoff: { name: "Mira",  handle: "laidoff",      status: "laidoff", goal: 500, raised: 210, zhcta: "📦 资助我待业", escta: "📦 Financia mi paro", jacta: "📦 無職を支援",
+  laidoff: { name: "Mira",  handle: "laidoff",      status: "laidoff", zhcta: "📦 资助我待业", escta: "📦 Financia mi paro", jacta: "📦 無職を支援",
     links: [{ kind: "custom", url: "#", label: "📦 Fund my funemployment", zh: "📦 赞助我的待业人生", es: "📦 Financia mi paro divertido", ja: "📦 楽しい無職生活を支援" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Bridge me to the next offer", zh: "💸 撑我到下一个 offer", es: "💸 Llévame hasta la próxima oferta", ja: "💸 次のオファーまで繋いで" }] },
-  crypto:  { name: "Sol",   handle: "crypto-loss",   status: "crypto", goal: 1000, raised: 137, zhcta: "📉 资助我的回血", escta: "📉 Financia mi remontada", jacta: "📉 回復を支援",
+  crypto:  { name: "Sol",   handle: "crypto-loss",   status: "crypto", zhcta: "📉 资助我的回血", escta: "📉 Financia mi remontada", jacta: "📉 回復を支援",
     links: [{ kind: "custom", url: "#", label: "📉 Fund my recovery arc", zh: "📉 资助我回血", es: "📉 Financia mi remontada", ja: "📉 立て直しを支援" }, { kind: "crypto", url: "#", label: "🪙 Send a coin that won't crash", zh: "🪙 给我个不会崩的币", es: "🪙 Mándame una moneda que no se hunda", ja: "🪙 暴落しないコインを" }, { kind: "paypal", url: "#" }] },
-  student: { name: "Aria",  handle: "student",       status: "student", goal: 300, raised: 189, zhcta: "☕ 给我的期末续命", escta: "☕ Cafeína para finales", jacta: "☕ 期末に延命を",
+  student: { name: "Aria",  handle: "student",       status: "student", zhcta: "☕ 给我的期末续命", escta: "☕ Cafeína para finales", jacta: "☕ 期末に延命を",
     links: [{ kind: "coffee", url: "#", label: "☕ Caffeinate my finals", zh: "☕ 给我的期末续咖啡", es: "☕ Cafeína para mis exámenes", ja: "☕ 期末にカフェインを" }, { kind: "custom", url: "#", label: "🍕 Diversify my pizza diet", zh: "🍕 让我的披萨换换口味", es: "🍕 Diversifica mi dieta de pizza", ja: "🍕 ピザ食生活に多様性を" }, { kind: "paypal", url: "#" }] },
-  pet:     { name: "Tess",  handle: "catstaff",      status: "pet",    goal: 300, raised: 96, zhcta: "🐱 给主子进贡", escta: "🐱 Tributo al gato", jacta: "🐱 猫様に貢ぐ",
+  pet:     { name: "Tess",  handle: "catstaff",      status: "pet",    zhcta: "🐱 给主子进贡", escta: "🐱 Tributo al gato", jacta: "🐱 猫様に貢ぐ",
     links: [{ kind: "custom", url: "#", label: "🐱 Fund the tiny landlord", zh: "🐱 给带毛房东进贡", es: "🐱 Financia al casero diminuto", ja: "🐱 小さな大家を支援" }, { kind: "coffee", url: "#" }, { kind: "paypal", url: "#", label: "💸 Pay the cat's bills", zh: "💸 替猫主子还账单", es: "💸 Paga las facturas del gato", ja: "💸 猫の請求書を払って" }] },
 };
 
@@ -264,9 +264,10 @@ const BANDS = {
 function brokeScore(data) {
   const st = STATUSES[data.status] || STATUSES.ramen;
   let s = st.base;
-  // a longer sob story scores higher (the only user-driven input now that the
-  // unverifiable goal/raised numbers are gone)
-  s += Math.min(12, ((data.story || "").length / 60));
+  // a longer sob story scores higher — the only user-driven input now that the
+  // unverifiable goal/raised numbers are gone, so let it span the full story
+  // length (≤240 chars) for real spread
+  s += Math.min(15, ((data.story || "").length / 16));
   s = Math.max(31, Math.min(99, Math.round(s)));
 
   let band;
@@ -306,33 +307,29 @@ const LEX = {
     someoneName: "Someone", someoneCard: "Someone broke",
     title: (n, s) => `${n} is ${s}% broke · No Money`,
     share: (n, s) => `${n} is ${s}% broke 💸`,
-    raised: (r, g) => `$${num(r)} raised of $${num(g)} survival fund`,
     img: { score: s => `BROKE SCORE  ${s}/100`, h1: n => `${n} is`, h2: s => `${s}% broke.`,
-           quote: "Help me become slightly less broke.", prog: (p, g) => `${p}% to $${num(g)} survival goal` },
+           quote: "Help me become slightly less broke." },
   },
   zh: {
     someoneName: "某人", someoneCard: "某破产人士",
     title: (n, s) => `${n} 破产 ${s}% · No Money`,
     share: (n, s) => `${n} 破产 ${s}% 💸`,
-    raised: (r, g) => `已筹 $${num(r)} / 目标 $${num(g)} 生存基金`,
     img: { score: s => `破产分  ${s}/100`, h1: n => `${n}`, h2: s => `破产 ${s}%`,
-           quote: "帮我变得没那么穷一点。", prog: (p, g) => `已达成 ${p}% · 生存目标 $${num(g)}` },
+           quote: "帮我变得没那么穷一点。" },
   },
   es: {
     someoneName: "Alguien", someoneCard: "Alguien sin dinero",
     title: (n, s) => `${n} está ${s}% en quiebra · No Money`,
     share: (n, s) => `${n} está ${s}% en quiebra 💸`,
-    raised: (r, g) => `$${num(r)} recaudados de $${num(g)} para sobrevivir`,
     img: { score: s => `NIVEL DE QUIEBRA  ${s}/100`, h1: n => `${n} está`, h2: s => `${s}% en quiebra`,
-           quote: "Ayúdame a estar un poco menos pobre.", prog: (p, g) => `${p}% de $${num(g)} para sobrevivir` },
+           quote: "Ayúdame a estar un poco menos pobre." },
   },
   ja: {
     someoneName: "誰か", someoneCard: "無一文の誰か",
     title: (n, s) => `${n} は ${s}% 破産 · No Money`,
     share: (n, s) => `${n} は ${s}% 破産 💸`,
-    raised: (r, g) => `生存資金 $${num(g)} のうち $${num(r)} 達成`,
     img: { score: s => `破産スコア  ${s}/100`, h1: n => `${n} は`, h2: s => `${s}% 破産`,
-           quote: "ちょっとだけ救ってください。", prog: (p, g) => `生存目標 $${num(g)} の ${p}%` },
+           quote: "ちょっとだけ救ってください。" },
   },
 };
 function lx() { return LEX[curLang()] || LEX.en; }

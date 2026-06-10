@@ -151,7 +151,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 }
 .page-card.mock .avatar { width: 66px; height: 66px; font-size: 32px; margin-bottom: 12px; }
 .page-card.mock .page-story { margin-bottom: 18px; }
-.page-card.mock .goal-wrap, .page-card.mock .broke-score, .page-card.mock .support-btns { margin-bottom: 16px; }
+.page-card.mock .broke-score, .page-card.mock .support-btns { margin-bottom: 16px; }
 .page-card.mock .broke-score { margin-bottom: 0; }
 .hero-visual:hover .page-card.mock { transform: rotateY(0deg) rotateX(0deg); }
 @keyframes heroFloat {
@@ -189,9 +189,6 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .demo-card .page-handle { font-size: 11px; margin-bottom: 13px; }
 .demo-card .page-story { font-size: 13px; line-height: 1.5; margin-bottom: 15px; min-height: 39px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.demo-card .goal-wrap { padding: 11px 13px; margin-bottom: 13px; }
-.demo-card .goal-wrap .goal-row { margin-bottom: 8px; }
-.demo-card .goal-row .label, .demo-card .goal-row .pct { font-size: 12px; }
 .demo-card .demo-cta { display: block; background: var(--accent, var(--green)); color: #04130a;
   border-radius: 11px; padding: 11px; font-weight: 700; font-size: 13px; margin-bottom: 13px; }
 .demo-card .broke-score { padding: 12px 14px; margin-bottom: 0; }
@@ -280,9 +277,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .page-card.theme-mono .status-pill { background: var(--bg-2); border-color: var(--line); }
 .page-card.theme-mono .status-pill .dot { background: var(--ink); }
 .page-card.theme-mono .page-handle,
-.page-card.theme-mono .goal-row .pct,
 .page-card.theme-mono .broke-score .bs-num { color: var(--ink); }
-.page-card.theme-mono .goal-bar > i,
 .page-card.theme-mono .bs-meter > i { background: var(--ink); box-shadow: none; }
 .page-card.theme-mono .support-btns a:first-child,
 .page-card.theme-mono .demo-cta { background: var(--ink); color: #fff; }
@@ -322,15 +317,6 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .page-handle { font-family: var(--mono); font-size: 12px; margin-bottom: 16px;
   color: var(--green-text); color: color-mix(in srgb, var(--accent, var(--green)), var(--ink) 42%); }
 .page-story { color: var(--ink-dim); font-size: 16px; line-height: 1.6; margin-bottom: 24px; white-space: pre-wrap; }
-
-.goal-wrap { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 24px; text-align: left; }
-.goal-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-.goal-row .pct { font-family: var(--mono); font-weight: 700;
-  color: var(--green-text); color: color-mix(in srgb, var(--accent, var(--green)), var(--ink) 42%); }
-.goal-row .label { font-size: 13px; color: var(--ink-faint); }
-.goal-bar { height: 10px; background: var(--bg); border-radius: 99px; overflow: hidden; }
-.goal-bar > i { display: block; height: 100%; background: var(--accent, var(--green)); border-radius: 99px; box-shadow: 0 0 12px -2px var(--accent, var(--green)); transition: width .6s cubic-bezier(.2,.8,.2,1); }
-.goal-sub { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); margin-top: 8px; }
 
 .support-btns { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
 /* first link = primary CTA (accent), the rest = subtle — consistent regardless of payment kind */
@@ -399,9 +385,6 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .create-head p { color: var(--ink-dim); margin-top: 8px; font-size: 16px; }
 .create-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; padding: 28px 0 80px; }
 .form-col { display: flex; flex-direction: column; gap: 22px; }
-.money-input { position: relative; }
-.money-input > span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-faint); font-weight: 600; pointer-events: none; }
-.field .money-input input[type=number] { padding-left: 28px; }
 .field label { display: block; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
 .field .hint { font-size: 12px; color: var(--ink-faint); margin-top: 6px; }
 .field input[type=text], .field input[type=number], .field textarea, .field select {

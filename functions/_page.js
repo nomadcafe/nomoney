@@ -2,13 +2,12 @@
 // Used by save.js (maintain the recent index) and wall.js (rebuild it from KV).
 
 // An "empty" page is a registered handle that never got real content —
-// no story, no support links, no goal. The squatter signal for reclaiming.
+// no story and no support links. The squatter signal for reclaiming.
 export function isEmptyPage(d) {
   if (!d || typeof d !== "object") return true;
   const story = String(d.story || "").trim();
   const hasLinks = Array.isArray(d.links) && d.links.length > 0;
-  const hasGoal = Number(d.goal) > 0 || Number(d.raised) > 0;
-  return !(story || hasLinks || hasGoal);
+  return !(story || hasLinks);
 }
 
 // The compact record stored per page in the "pages:recent" index.
