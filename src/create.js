@@ -337,8 +337,13 @@ function render() {
   saveDraft();
 }
 
-// keep the in-progress page in localStorage so a refresh / accidental close doesn't lose it
-function saveDraft() {
+// keep the in-progress page in localStorage so a refresh / accidental close doesn't lose it.
+// debounced: render() runs every keystroke, and the draft can carry a ~30 KB avatar JPEG —
+// serializing + writing it synchronously on each keypress is needless jank.
+let draftT = 0;
+function saveDraft() { clearTimeout(draftT); draftT = setTimeout(writeDraft, 250); }
+function writeDraft() {
+  draftT = 0;
   try {
     localStorage.setItem("nm:draft", JSON.stringify({
       name: $("#f-name").value, handle: $("#f-handle").value, status, emoji,
@@ -348,6 +353,9 @@ function saveDraft() {
     }));
   } catch (e) { /* private mode / quota — ignore */ }
 }
+// flush a pending draft if the tab is closing/backgrounded before the debounce fires
+addEventListener("pagehide", () => { if (draftT) writeDraft(); });
+document.addEventListener("visibilitychange", () => { if (draftT && document.visibilityState === "hidden") writeDraft(); });
 function restoreDraft() {
   try {
     const d = JSON.parse(localStorage.getItem("nm:draft") || "null");
@@ -465,7 +473,7 @@ async function publish() {
   const editing = !!(editingSlug && editToken);
   const btn = $("#publish"), prev = btn.textContent;
   btn.textContent = editing ? t("create.updating") : t("create.publishing"); btn.disabled = true;
-  let result = null;
+  let result = null, errStatus = 0;
   try {
     const img = $("#shareCanvas").toDataURL("image/png");
     const score = NM.brokeScore(data).score;
@@ -480,11 +488,20 @@ async function publish() {
       body: JSON.stringify(payload),
     });
     if (res.ok) result = await res.json();
-    else if (res.status === 403) toast(t("toast.edit_invalid"));
-  } catch (e) { /* handled below */ }
+    else errStatus = res.status;
+  } catch (e) { /* errStatus stays 0 → treated as a connection failure below */ }
   btn.textContent = prev; btn.disabled = false; publishing = false;
 
-  if (!result || !result.slug) { if (!editing) toast(t("toast.publish_fail")); return; }
+  if (!result || !result.slug) {
+    // tell the truth about WHY it failed instead of always blaming the connection
+    const msg = errStatus === 403 ? t("toast.edit_invalid")
+              : errStatus === 429 ? t("toast.rate_limited")
+              : errStatus === 413 ? t("toast.too_large")
+              : errStatus === 415 ? t("toast.bad_image")
+              : (editing ? null : t("toast.publish_fail")); // editing keeps its old quiet-on-generic-error behavior
+    if (msg) toast(msg);
+    return;
+  }
 
   // reconcile local avatar state with what's now stored, so a later Remove in the
   // same session knows there's a saved photo to clear
@@ -509,7 +526,6 @@ async function publish() {
   $("#openPage").href = url;
   NM.renderShareRow($("#shareRow"), url, data);
   $("#modal").classList.add("open");
-  if (!data.links.length) toast(t("toast.tip_add_link"));
 }
 
 // switch the editor into "update this page" mode (after creating, or when opened via an edit link)
