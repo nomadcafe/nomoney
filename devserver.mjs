@@ -112,10 +112,18 @@ createServer(async (req, res) => {
     const chunks = []; for await (const c of req) chunks.push(c);
     let body; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { return send(res, 400, '{"error":"bad json"}', { "content-type": "application/json" }); }
     const slug = String(body.slug || ""); if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
-    const field = body.ev === "view" ? "v" : body.ev === "cta" ? "c" : null; if (!field) return send(res, 400, '{"error":"bad event"}', { "content-type": "application/json" });
+    // batched { v,c,s,o } from the current client, or a legacy single-event string
+    const FIELDS = ["v", "c", "s", "o"], LEGACY = { view: "v", cta: "c" };
+    const events = {};
+    if (typeof body.ev === "string") { const f = LEGACY[body.ev]; if (f) events[f] = 1; }
+    else if (body.ev && typeof body.ev === "object" && !Array.isArray(body.ev)) {
+      for (const f of FIELDS) { const n = Math.floor(Number(body.ev[f]) || 0); if (n > 0) events[f] = Math.min(n, 5); }
+    }
+    if (!Object.keys(events).length) return send(res, 400, '{"error":"bad event"}', { "content-type": "application/json" });
     if (!KV.has(slug)) return send(res, 404, '{"error":"no such page"}', { "content-type": "application/json" });
-    let stat = { v: 0, c: 0 }; try { const raw = KV.get("stat:" + slug); if (raw) { const o = JSON.parse(raw); stat = { v: +o.v || 0, c: +o.c || 0 }; } } catch {}
-    stat[field]++; KV.set("stat:" + slug, JSON.stringify(stat));
+    let stat = {}; try { stat = JSON.parse(KV.get("stat:" + slug) || "{}") || {}; } catch {}
+    const next = {}; for (const f of FIELDS) next[f] = (Math.floor(Number(stat[f]) || 0)) + (events[f] || 0);
+    KV.set("stat:" + slug, JSON.stringify(next));
     return send(res, 200, '{"ok":true}', { "content-type": "application/json" });
   }
 
@@ -148,7 +156,7 @@ createServer(async (req, res) => {
       if (body.token !== "dev") return send(res, 403, '{"error":"forbidden (dev token: dev)"}', { "content-type": "application/json" });
       if (body.list) {
         let recent = []; try { recent = JSON.parse(KV.get("pages:recent") || "[]"); } catch {}
-        for (const r of recent) { try { const o = JSON.parse(KV.get("stat:" + r.slug) || "null"); r.v = +(o && o.v) || 0; r.c = +(o && o.c) || 0; } catch { r.v = 0; r.c = 0; } }
+        for (const r of recent) { let o = null; try { o = JSON.parse(KV.get("stat:" + r.slug) || "null"); } catch {} for (const f of ["v", "c", "s", "o"]) r[f] = +(o && o[f]) || 0; }
         const creates = +KV.get("stat:creates") || 0;
         return send(res, 200, JSON.stringify({ featured: readList(), recent, creates }), { "content-type": "application/json" });
       }

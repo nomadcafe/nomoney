@@ -24,14 +24,16 @@ async function readList(env) {
   catch { return []; }
 }
 
-// Fold the per-page viral-loop counters (stat:<slug> -> {v,c}) onto each index
+// Fold the per-page viral-loop counters (stat:<slug> -> {v,c,s,o}) onto each index
 // entry so /admin can show them and sum the funnel. Reads are cheap on KV (the
 // scarce resource is writes); we parallelize and only read indexed (real) pages.
+const STAT_FIELDS = ["v", "c", "s", "o"];   // visits · make-mine · share acts · tip clicks
 async function attachStats(env, recent) {
   await Promise.all(recent.map(async (r) => {
     if (!r || !r.slug) return;
-    try { const raw = await env.PAGES.get("stat:" + r.slug); const o = raw ? JSON.parse(raw) : null; r.v = +(o && o.v) || 0; r.c = +(o && o.c) || 0; }
-    catch { r.v = 0; r.c = 0; }
+    let o = null;
+    try { const raw = await env.PAGES.get("stat:" + r.slug); o = raw ? JSON.parse(raw) : null; } catch {}
+    for (const f of STAT_FIELDS) r[f] = +(o && o[f]) || 0;   // pages older than a field read 0
   }));
   return recent;
 }

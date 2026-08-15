@@ -532,6 +532,10 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .funnel-chip { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; min-width: 120px; }
 .funnel-chip b { font-family: "Space Grotesk", system-ui, sans-serif; font-size: 26px; line-height: 1; color: var(--ink); }
 .funnel-chip span { font-size: 12px; font-weight: 600; color: var(--ink-dim); }
+/* the share rate is the metric the roadmap says to optimize — give it the one accent
+   in the row so the eye lands on it before the numbers that are merely interesting */
+.funnel-chip-hot { background: rgba(0,194,90,0.08); border-color: var(--green-dim); }
+.funnel-chip-hot b, .funnel-chip-hot span { color: var(--green-text); }
 .funnel-best { margin-top: 14px; font-size: 14px; color: var(--ink); }
 .funnel-best:empty { display: none; }
 .admin-del:hover { border-color: #e0345a; background: #ffe9ee; }

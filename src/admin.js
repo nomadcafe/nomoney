@@ -11,8 +11,8 @@ const labelOf = st => (NM.STATUSES[st] ? NM.STATUSES[st].label : st);
 const STALE_DAYS = 30; // not touched in this many days → flagged as a reclaim candidate
 const DAY = 86400e3;
 
-// click-through, clamped: hit("cta") fires even for owners but hit("view") is skipped
-// for them, so c can exceed v on a page the owner remixed — don't show "250%".
+// rates, clamped. The client excludes the page's own author, but counts are
+// non-atomic and pages predate some fields — never render a nonsense "250%".
 const pct = (a, b) => (b > 0 ? Math.min(100, Math.round((a / b) * 100)) : 0);
 function daysSince(iso) { if (!iso) return null; const t = Date.parse(iso); return isNaN(t) ? null : Math.floor((Date.now() - t) / DAY); }
 function relTime(iso) {
@@ -61,29 +61,36 @@ async function load() {
   renderRecent();
 }
 
-// The headline shareability funnel: of everyone who landed on a page, how many
-// hit "Make mine" (the loop trigger), and how many pages got created overall.
-// Counts are directional (see functions/api/hit.js), not exact — read the ratio.
+// The headline funnel, in the order the loop actually runs:
+//   visits → shared → "Make mine" → pages created, plus tip clicks off to the side.
+// SHARE RATE is the number the roadmap says to optimize; make-mine is the loop closing;
+// tips are the only evidence the product's premise (a tipping page) works at all.
+// Counts are directional (see functions/api/hit.js), not exact — read the ratios.
 function renderFunnel() {
-  const v = allRecent.reduce((s, p) => s + (p.v || 0), 0);
-  const c = allRecent.reduce((s, p) => s + (p.c || 0), 0);
+  const sum = f => allRecent.reduce((n, p) => n + (p[f] || 0), 0);
+  const v = sum("v"), c = sum("c"), sh = sum("s"), o = sum("o");
   const box = $("#funnel");
-  if (!v && !c && !creates) { box.style.display = "none"; return; }
+  if (!v && !c && !sh && !o && !creates) { box.style.display = "none"; return; }
   box.style.display = "";
-  const rate = pct(c, v);
   // momentum: pages created in the last 7 days (legacy pages without a timestamp are skipped)
   const new7 = allRecent.filter(p => { const d = daysSince(p.createdAt); return d != null && d < 7; }).length;
-  const chip = (n, label) => `<span class="funnel-chip"><b>${n.toLocaleString()}</b><span>${label}</span></span>`;
+  const chip = (n, label, hot) => `<span class="funnel-chip${hot ? " funnel-chip-hot" : ""}"><b>${n.toLocaleString()}</b><span>${label}</span></span>`;
   $("#funnelRow").innerHTML =
-    chip(v, "visits") + chip(c, `“Make mine” · ${rate}%`) + chip(creates, "pages created") + chip(new7, "new · last 7d");
+    chip(v, "visits") +
+    chip(sh, `shared · ${pct(sh, v)}%`, true) +
+    chip(c, `“Make mine” · ${pct(c, v)}%`) +
+    chip(creates, "pages created") +
+    chip(o, `tip clicks · ${pct(o, v)}%`) +
+    chip(new7, "new · last 7d");
 
   // surface what's actually spreading, so you know which page to amplify/feature
-  const top = allRecent.filter(p => (p.v || 0) > 0).sort((a, b) => (b.v || 0) - (a.v || 0))[0];
+  const top = allRecent.filter(p => (p.v || 0) > 0).sort((a, b) => (b.s || 0) - (a.s || 0) || (b.v || 0) - (a.v || 0))[0];
   $("#funnelBest").innerHTML = top
-    ? `🔥 Spreading best: <b>${esc(top.name || top.slug)}</b> <span class="admin-muted">no.money/${esc(top.slug)}</span> — ${top.v} visits${top.v ? `, ${pct(top.c || 0, top.v)}% make-mine` : ""}`
+    ? `🔥 Most shared: <b>${esc(top.name || top.slug)}</b> <span class="admin-muted">no.money/${esc(top.slug)}</span> — ${top.v} visits · ${pct(top.s || 0, top.v)}% shared · ${pct(top.c || 0, top.v)}% make-mine`
     : "";
   $("#funnelHint").textContent =
-    "Click-through (per visit) = how shareable the page is. Pages created = the loop's output. Counts are directional, not exact.";
+    "Share rate is the metric — it answers “is this page worth sending on?”. Make-mine is the loop closing; tip clicks say whether tipping pages actually get tipped. " +
+    "All per visit, once per session, directional not exact. Landing-page traffic isn't here — read it off Cloudflare's own request analytics.";
 }
 
 function renderFeatured(featured) {
@@ -113,6 +120,8 @@ function sortedFiltered() {
   const sort = $("#sortBy").value;
   if (sort === "views") {
     list.sort((a, b) => (b.v || 0) - (a.v || 0));
+  } else if (sort === "shared") {
+    list.sort((a, b) => (b.s || 0) - (a.s || 0) || (b.v || 0) - (a.v || 0));
   } else if (sort === "msgs") {
     list.sort((a, b) => (b.msgs || 0) - (a.msgs || 0));
   } else {
@@ -143,10 +152,12 @@ function renderRecent() {
   el.innerHTML = list.map(p => {
     const edited = daysSince(p.updatedAt);
     const stale = edited != null && edited >= STALE_DAYS;
-    const ctaRate = (p.v || 0) > 0 ? pct(p.c || 0, p.v) : null;
+    const rate = n => ((p.v || 0) > 0 ? ` · ${pct(n, p.v)}%` : "");
     const badges =
       ((p.v || 0) > 0 ? `<span class="admin-tag" title="visits">👁 ${p.v}</span>` : "") +
-      ((p.c || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="“Make mine” clicks · click-through">↗ ${p.c} · ${ctaRate}%</span>` : "") +
+      ((p.s || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="share acts · share rate per visit">📤 ${p.s}${rate(p.s)}</span>` : "") +
+      ((p.c || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="“Make mine” clicks · click-through">↗ ${p.c}${rate(p.c)}</span>` : "") +
+      ((p.o || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="tip-link clicks · per visit">💸 ${p.o}${rate(p.o)}</span>` : "") +
       ((p.msgs || 0) > 0 ? `<span class="admin-tag admin-tag-live">💬 ${p.msgs}</span>` : "") +
       (p.empty ? `<span class="admin-tag admin-tag-warn">empty</span>` : "") +
       (stale ? `<span class="admin-tag">stale ${relTime(p.updatedAt)}</span>` : "");

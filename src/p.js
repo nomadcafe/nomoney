@@ -2,7 +2,7 @@ import "../assets/core.js"; // sets window.NM + loads the stylesheet
 const t = (k) => window.I18N.t(k);
 const lang = () => window.I18N.lang;
 const params = new URLSearchParams(location.search);
-const REPORT_EMAIL = "abuse@no.money";   // where content-rule reports land
+const REPORT_EMAIL = "hello@keki.ai";   // where content-rule reports land
 let data = null;
 if (window.__PAGE__ && typeof window.__PAGE__ === "object") {
   data = window.__PAGE__;                         // injected by the /s/:id short-link function
@@ -149,23 +149,75 @@ async function deleteMsg(id) {
 
 initMessages();
 
-/* ---------- viral-loop instrumentation ---------- */
-// directional analytics only; the only metric the product optimizes is shareability.
-// fire-and-forget beacon so it never blocks render or the CTA's navigation.
-function hit(ev) {
-  if (!isVanity) return;               // demos have no slug — nothing to attribute
-  // once per tab-session per page+event: a refresh / back-button / double-click doesn't
-  // re-count, so the funnel reads ~per-session (closer to a real conversion rate) rather
-  // than raw pageviews. Pure client-side — costs no KV write. If storage is blocked we
-  // fall through and still send (slight over-count beats losing the signal entirely).
-  try { const k = "nm:hit:" + ev + ":" + slug; if (sessionStorage.getItem(k)) return; sessionStorage.setItem(k, "1"); } catch (e) {}
+/* ---------- viral-loop instrumentation ----------
+   Directional analytics only; the one metric this product optimizes is shareability.
+
+   Events (each counted at most once per tab-session, so every ratio reads as a
+   per-visitor conversion rate rather than raw clicks):
+     v  visit          c  "Make mine" click
+     s  share act      o  tip-link click
+   "s" is the honest shareability signal — opening the share image, copying the link,
+   downloading the image or firing an X/Reddit/Telegram intent are the moments someone
+   decided this page was worth sending on. "o" is the only evidence a tipping page
+   produces tips, which is what every paid feature on the roadmap assumes.
+
+   Batched: a session accumulates what happened and flushes ONCE, because KV charges
+   per write, not per event. That's why going from 2 signals to 4 costs less than the
+   old one-request-per-event design did, not more. */
+const HIT_MAX_FLUSHES = 3;               // hard stop: a session can't cost more than this
+let hitPending = null;                   // { v?:1, c?:1, s?:1, o?:1 } waiting to be sent
+let hitFlushes = 0, hitTimer = 0;
+
+// remember, per tab-session, which events this page already reported
+function hitSeen(ev) {
+  const k = "nm:hit:" + ev + ":" + slug;
+  try {
+    if (sessionStorage.getItem(k)) return true;
+    sessionStorage.setItem(k, "1");
+  } catch (e) { /* storage blocked — slight over-count beats losing the signal */ }
+  return false;
+}
+
+function mark(ev) {
+  if (!isVanity) return;                 // demos have no slug — nothing to attribute
+  if (ownerToken) return;                // the page's own author: testing your buttons must not
+                                         // register as a tip click or a share (the old code only
+                                         // skipped their views, so owners inflated everything else)
+  if (hitSeen(ev)) return;
+  hitPending = hitPending || {};
+  hitPending[ev] = 1;
+  // first flush lands quickly so a short visit still registers; later ones wait longer
+  // so a burst of activity (share → copy → tip click) rides out on a single beacon
+  clearTimeout(hitTimer);
+  hitTimer = setTimeout(flushHits, hitFlushes === 0 ? 5000 : 15000);
+}
+
+function flushHits() {
+  clearTimeout(hitTimer); hitTimer = 0;
+  if (!hitPending || hitFlushes >= HIT_MAX_FLUSHES) return;
+  const ev = hitPending;
+  hitPending = null; hitFlushes++;
   try {
     const body = JSON.stringify({ slug, ev });
     if (navigator.sendBeacon) navigator.sendBeacon("/api/hit", new Blob([body], { type: "application/json" }));
     else fetch("/api/hit", { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => {});
   } catch (e) {}
 }
-if (!ownerToken) hit("view");          // skip the owner's own views so they don't inflate the count
+
+// leaving (tab closed, backgrounded, navigating to a tip link) is the reliable moment
+// to send — pagehide/visibilitychange are the beacon-safe pair across desktop + mobile
+addEventListener("pagehide", flushHits);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushHits(); });
+
+mark("v");                               // mark() already excludes the owner and demo pages
+
+// a tip-link click is the money moment. Delegated on the card because render() replaces
+// its innerHTML on every language switch.
+document.getElementById("card").addEventListener("click", (e) => {
+  if (e.target.closest(".support-btns a")) mark("o");
+});
+// any explicit act of sharing — see the "s" note above
+document.getElementById("shareRow").addEventListener("click", (e) => { if (e.target.closest("a,button")) mark("s"); });
 
 /* ---------- report ---------- */
 // mailto (no backend, no accounts, nothing to rate-limit) with the page prefilled, so
@@ -182,11 +234,12 @@ if (isVanity) {
 // viral loop: "make mine" starts a fresh page themed to the same broke status
 const remixBtn = document.getElementById("remixBtn");
 remixBtn.href = "create.html?status=" + encodeURIComponent(data.status || "");
-remixBtn.addEventListener("click", () => hit("cta"));
+remixBtn.addEventListener("click", () => mark("c"));
 
 // share image
 const modal = document.getElementById("modal");
 document.getElementById("shareBtn").onclick = () => {
+  mark("s");
   NM.drawShareImage(document.getElementById("shareCanvas"), data);
   NM.renderShareRow(document.getElementById("shareRow"), location.href, data);
   modal.classList.add("open");
@@ -194,6 +247,7 @@ document.getElementById("shareBtn").onclick = () => {
 document.getElementById("closeModal").onclick = () => modal.classList.remove("open");
 modal.onclick = (e) => { if (e.target === modal) modal.classList.remove("open"); };
 document.getElementById("downloadBtn").onclick = () => {
+  mark("s");
   const a = document.createElement("a");
   a.download = `no-money-${data.handle || "page"}.png`;
   a.href = document.getElementById("shareCanvas").toDataURL("image/png");
@@ -205,7 +259,7 @@ function flashCopied(btn) {
   btn._t = setTimeout(() => { btn.textContent = btn._label; btn.classList.remove("copied"); btn._t = null; }, 1400);
 }
 document.getElementById("copyBtn").onclick = async () => {
-  try { await navigator.clipboard.writeText(location.href); toast(t("toast.link_copied")); flashCopied(document.getElementById("copyBtn")); }
+  try { await navigator.clipboard.writeText(location.href); mark("s"); toast(t("toast.link_copied")); flashCopied(document.getElementById("copyBtn")); }
   catch { toast(t("toast.copy_fail")); }
 };
 

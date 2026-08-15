@@ -83,12 +83,17 @@ Dashboard → the `nomoney` Pages project → Custom domains → add `no.money`
   |---|---|---|
   | `POST /api/save` | 30 creates/IP/day | JSON ≤ 8 KB, PNG ≤ ~0.9 MB, avatar ≤ ~0.2 MB; edits are exempt (they need the token) |
   | `POST /api/msgs` | 40 posts/IP/day | duplicate text rejected (409); links in text rejected |
-  | `POST /api/hit`  | 40 events/IP/day | slug must be an existing page |
+  | `POST /api/hit`  | 40 flushes/IP/day | slug must be an existing page; a session batches its events into 1–3 flushes |
   | `POST /api/ai`   | `AI_RL_PER_MIN`/`AI_RL_PER_DAY` (default 8/min, 80/day) | protects Workers AI spend |
-- **Write budget:** free KV is ~1000 writes/day and a counted analytics event costs 2 of them
-  (counter + IP budget). Past ~500 engaged visits/day, move `/api/hit` to Workers Analytics Engine.
-- **Reports:** public pages link to `abuse@no.money` (`REPORT_EMAIL` in `src/p.js`) — point it at a real
-  inbox before launch, or reports go nowhere.
+- **Write budget:** free KV is ~1000 writes/day and an analytics *flush* costs 2 of them
+  (counter + IP budget). A session flushes once or twice regardless of how many event types it
+  reports, so adding signals is free — adding traffic is not. Past ~500 engaged visits/day, move
+  `/api/hit` to Workers Analytics Engine.
+- **Landing-page traffic is deliberately not instrumented.** Cloudflare's own request analytics
+  already counts hits on `/` and `/create.html`; re-counting them would spend the write budget on
+  something the dashboard shows for free. `/api/hit` only measures what the dashboard can't see
+  (per-page share acts, make-mine clicks, tip-link clicks).
+- **Reports:** public pages link to `hello@keki.ai` (`REPORT_EMAIL` in `src/p.js`).
 - **Slugs are vanity**: `no.money/<handle>` from the user's handle; reserved names and collisions get a
   short random `-suffix` (account-less, so handles aren't owned/reserved — locking a handle is a future paid feature).
 - KV is eventually consistent (writes propagate in seconds) — fine for create-then-share.
