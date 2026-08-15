@@ -9,7 +9,7 @@
 //   Curation is account-less but admin-gated; if WALL_ADMIN_TOKEN is unset, POST is disabled
 //   (manage the list with `wrangler kv key put wall:featured '[...]'` instead).
 
-import { indexEntry } from "../_page.js";
+import { indexEntry, deletePage } from "../_page.js";
 
 const KEY = "wall:featured";
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
@@ -40,15 +40,16 @@ export async function onRequestGet({ env }) {
   if (!env.PAGES) return json({ error: "storage not configured" }, 500);
   const slugs = await readList(env);
 
-  const cards = [];
-  for (const slug of slugs) {
-    if (!SLUG_RE.test(slug)) continue;
+  // fetch the featured pages in parallel — this is the homepage's blocking call, and
+  // 24 sequential KV round-trips is 24x the latency for no reason
+  const cards = (await Promise.all(slugs.map(async (slug) => {
+    if (!SLUG_RE.test(slug)) return null;
     const raw = await env.PAGES.get(slug);
-    if (!raw) continue;                       // page was deleted — skip it silently
+    if (!raw) return null;                    // page was deleted — skip it silently
     let d; try { d = JSON.parse(raw).d; } catch { d = null; }
-    if (!d) continue;
+    if (!d) return null;
     const first = Array.isArray(d.links) && d.links[0] ? d.links[0] : null;
-    cards.push({
+    return {
       slug,
       name: d.name || "Someone broke",
       handle: d.handle || slug,
@@ -56,8 +57,8 @@ export async function onRequestGet({ env }) {
       emoji: typeof d.emoji === "string" ? d.emoji : "",
       av: typeof d.av === "string" ? d.av : "",
       link: first ? { kind: first.kind || "custom", label: first.label || "" } : null,
-    });
-  }
+    };
+  }))).filter(Boolean);                       // curated order is preserved by map()
   // short edge cache — the wall changes rarely and tolerates being a minute stale
   return json({ cards }, 200, "public, max-age=60");
 }
@@ -117,14 +118,7 @@ export async function onRequestPost({ request, env }) {
   if (body.delete) {
     const s = clean(body.delete);
     if (!s) return json({ error: "bad slug" }, 400);
-    await env.PAGES.delete(s);             // the page itself
-    await env.PAGES.delete("img:" + s);    // its share image
-    await env.PAGES.delete("avatar:" + s); // its avatar photo
-    await env.PAGES.delete("msg:" + s);    // its support messages
-    try {                                  // drop from the activity index
-      const recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]");
-      if (Array.isArray(recent)) await env.PAGES.put("pages:recent", JSON.stringify(recent.filter(r => r && r.slug !== s)));
-    } catch {}
+    await deletePage(env, s);              // page + image + avatar + messages + stats + index
     list = list.filter(x => x !== s);      // and from the featured wall if present
     await env.PAGES.put(KEY, JSON.stringify(list));
     return json({ deleted: s, featured: list });

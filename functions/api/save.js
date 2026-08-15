@@ -101,10 +101,15 @@ export async function onRequestPost({ request, env }) {
     const taken = async (s) => RESERVED.has(s) || !!(await env.PAGES.get(s));
     slug = root;
     if (await taken(slug)) {
+      let free = false;
       for (let i = 0; i < 8; i++) {
         slug = `${root}-${suffix(i < 4 ? 3 : 5)}`;
-        if (!(await taken(slug))) break;
+        if (!(await taken(slug))) { free = true; break; }
       }
+      // every candidate collided — falling through here would PUT over a stranger's
+      // page and hand its slug a new edit token. Astronomically unlikely, silently
+      // destructive; fail loudly instead.
+      if (!free) return json({ error: "slug unavailable" }, 503);
     }
     token = newToken();
   }

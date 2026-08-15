@@ -279,8 +279,8 @@ $("#avatarRemove").onclick = () => {
 };
 
 function gather() {
-  const handle = ($("#f-handle").value.trim() || "you").toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "you";
+  const handle = ($("#f-handle").value.trim() || "broke").toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "broke";
   return {
     name: $("#f-name").value.trim() || "Someone broke",
     handle,
@@ -295,7 +295,6 @@ function gather() {
 }
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-function num(n) { return (Number(n) || 0).toLocaleString(); }
 function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
 function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); }
 
@@ -542,12 +541,61 @@ function enterEditMode(slug, token) {
   editingSlug = slug; editToken = token;
   const h = $("#f-handle"); h.value = slug; h.readOnly = true; handleTouched = true;
   $("#editNote").style.display = "";
+  $("#dangerZone").style.display = token ? "" : "none";   // no token → no delete rights
   applyEditModeText();
+}
+
+/* ---------- delete this page ----------
+   The edit token is the only identity this product has, so it's what authorizes a
+   takedown too. Two-step confirm: the page is public and may have someone's face on
+   it, and there is no undo — but people who want out must be able to get out. */
+let deleteArmed = false, deleteT = 0;
+$("#deletePage").onclick = async () => {
+  if (!editingSlug || !editToken) return;
+  const btn = $("#deletePage");
+  if (!deleteArmed) {                       // first click arms, second click fires
+    deleteArmed = true;
+    btn.textContent = t("create.delete_confirm");
+    clearTimeout(deleteT);
+    deleteT = setTimeout(() => { deleteArmed = false; btn.textContent = t("create.delete_btn"); }, 5000);
+    return;
+  }
+  clearTimeout(deleteT); deleteArmed = false;
+  btn.disabled = true; btn.textContent = t("create.deleting");
+  let ok = false, errStatus = 0;
+  try {
+    const res = await fetch(base + "api/delete", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ slug: editingSlug, editToken }),
+    });
+    ok = res.ok;
+    errStatus = res.status;
+  } catch (e) { /* errStatus 0 → connection failure */ }
+  if (!ok) {
+    btn.disabled = false; btn.textContent = t("create.delete_btn");
+    toast(errStatus === 403 ? t("toast.edit_invalid") : errStatus === 404 ? t("toast.delete_gone") : t("toast.delete_fail"));
+    // a 404 means it's already gone — stop offering to edit a page that no longer exists
+    if (errStatus === 404) forgetPage(editingSlug);
+    return;
+  }
+  forgetPage(editingSlug);
+  toast(t("toast.page_deleted"));
+  setTimeout(() => location.href = base + "create.html", 900);   // fresh, blank editor
+};
+
+// drop every local trace of a page that no longer exists (its edit token, the
+// "resume editing" pointer, and the draft slot if it was pointing here)
+function forgetPage(slug) {
+  try {
+    localStorage.removeItem("nm:edit:" + slug);
+    if (localStorage.getItem("nm:last") === slug) localStorage.removeItem("nm:last");
+  } catch (e) {}
 }
 // edit-mode header/button text — re-applied after a language switch (which resets [data-i18n])
 function applyEditModeText() {
   if (!editingSlug) return;
   $("#publish").textContent = t("create.update_btn");
+  $("#deletePage").textContent = deleteArmed ? t("create.delete_confirm") : t("create.delete_btn");
   document.querySelector(".create-head h1").textContent = t("create.edit_h1");
 }
 

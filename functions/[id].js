@@ -25,7 +25,12 @@ export async function onRequestGet(context) {
   const meta = stored.m || {};
 
   const origin = new URL(request.url).origin;
-  const ogImg = `${origin}/og/${id}`;
+  // /og/:id is served immutable for a year (the bytes for a given version never change),
+  // so the URL has to move when the page is re-published — otherwise editing your story
+  // leaves the OLD share image cached at every edge and in every browser, forever. The
+  // avatar already does this via data.av; this is the same trick keyed on updatedAt.
+  const ogVer = String(meta.updatedAt || "").replace(/\D/g, "").slice(-12);
+  const ogImg = `${origin}/og/${id}${ogVer ? `?v=${ogVer}` : ""}`;
   const pageUrl = `${origin}/${id}`;
   const title = meta.title || `${data.name || "Someone"} is broke · No Money`;
   const desc = meta.desc || "Help them become slightly less broke.";

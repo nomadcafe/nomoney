@@ -2,24 +2,21 @@ import "../assets/core.js"; // sets window.NM + loads the stylesheet
 const t = (k) => window.I18N.t(k);
 const lang = () => window.I18N.lang;
 const params = new URLSearchParams(location.search);
+const REPORT_EMAIL = "abuse@no.money";   // where content-rule reports land
 let data = null;
 if (window.__PAGE__ && typeof window.__PAGE__ === "object") {
   data = window.__PAGE__;                         // injected by the /s/:id short-link function
 } else if (params.get("demo") && NM.DEMOS[params.get("demo")]) {
   data = { ...NM.DEMOS[params.get("demo")] };
 }
-if (!data) { location.href = "index.html"; }
+// nothing to render (direct hit on /p.html with no ?demo=) — bounce home. Assigning
+// location.href doesn't halt execution, so stop the module here explicitly; everything
+// below assumes `data`.
+if (!data) { location.replace("index.html"); throw new Error("no page data"); }
 
 // fill defaults from status preset
 const st = (Object.prototype.hasOwnProperty.call(NM.STATUSES, data.status) && NM.STATUSES[data.status]) || NM.STATUSES.ramen;
-data.links = data.links || defaultLinks(data.status);
-data.msgs = data.msgs || st.msgs;
-
-function defaultLinks(status) {
-  const base = [{ kind: "ramen", url: "#" }, { kind: "coffee", url: "#" }];
-  base.push({ kind: "paypal", url: "#" });
-  return base;
-}
+data.links = data.links || [];   // stored pages always have ≥1 link (save.js requires it); demos carry their own
 
 function render() {
   const ls = NM.locStatus(st);
@@ -77,7 +74,6 @@ function render() {
 }
 
 function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-function num(n) { return (Number(n) || 0).toLocaleString(); }
 function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
 
 function toast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1800); }
@@ -96,7 +92,7 @@ async function initMessages() {
   if (isVanity) {
     try { const r = await fetch("/api/msgs?slug=" + encodeURIComponent(slug)); if (r.ok) messages = (await r.json()).messages || []; } catch (e) {}
   } else {
-    const seed = st[lang() + "msgs"] || data.msgs || []; // demo: static, read-only; localized seed where available
+    const seed = st[lang() + "msgs"] || st.msgs || []; // demo: static, read-only; localized seed where available
     messages = seed.map(m => ({ n: m[1] || "anon", t: m[0] }));
   }
   renderMsgSection();
@@ -135,7 +131,10 @@ async function postMsg() {
     const r = await fetch("/api/msgs", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, name, text }) });
     const j = await r.json().catch(() => ({}));
     if (r.ok && j.message) { messages.unshift(j.message); document.getElementById("mText").value = ""; renderMsgSection(); toast(t("toast.posted")); }
-    else toast(j.error === "no links allowed" ? t("toast.no_links_msg") : t("toast.post_fail"));
+    else toast(j.error === "no links allowed" ? t("toast.no_links_msg")
+             : j.error === "duplicate" ? t("toast.msg_dupe")
+             : j.error === "rate limited" ? t("toast.msg_rate")
+             : t("toast.post_fail"));
   } catch (e) { toast(t("toast.post_fail")); }
   btn.disabled = false; btn.textContent = prev;
 }
@@ -167,6 +166,18 @@ function hit(ev) {
   } catch (e) {}
 }
 if (!ownerToken) hit("view");          // skip the owner's own views so they don't inflate the count
+
+/* ---------- report ---------- */
+// mailto (no backend, no accounts, nothing to rate-limit) with the page prefilled, so
+// a report arrives actionable. Only shown on real pages — demos are ours.
+const reportLink = document.getElementById("reportLink");
+if (isVanity) {
+  const subj = encodeURIComponent(`Report: no.money/${slug}`);
+  const body = encodeURIComponent(`Page: ${location.href}\n\nWhat's wrong with it:\n`);
+  reportLink.href = `mailto:${REPORT_EMAIL}?subject=${subj}&body=${body}`;
+} else {
+  reportLink.remove();
+}
 
 // viral loop: "make mine" starts a fresh page themed to the same broke status
 const remixBtn = document.getElementById("remixBtn");

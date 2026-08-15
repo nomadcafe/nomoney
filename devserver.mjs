@@ -20,7 +20,9 @@ const send = (res, status, body, headers = {}) => { res.writeHead(status, header
 
 function renderPage(html, id, host) {
   const stored = JSON.parse(KV.get(id)), data = stored.d || {}, meta = stored.m || {};
-  const origin = `http://${host}`, ogImg = `${origin}/og/${id}`, pageUrl = `${origin}/${id}`;
+  const origin = `http://${host}`, pageUrl = `${origin}/${id}`;
+  const ogVer = String(meta.updatedAt || "").replace(/\D/g, "").slice(-12);   // busts the immutable /og cache on re-publish
+  const ogImg = `${origin}/og/${id}${ogVer ? `?v=${ogVer}` : ""}`;
   const title = meta.title || `${data.name || "Someone"} is broke · No Money`;
   const desc = meta.desc || "Help them become slightly less broke.";
   html = html.replace("<head>", '<head><base href="/">');
@@ -52,7 +54,19 @@ createServer(async (req, res) => {
       token = newToken();
     }
     data.handle = slug; // keep the displayed handle == the real URL
-    KV.set(slug, JSON.stringify({ d: data, m: body.meta || {}, t: token }));
+    const AV = "data:image/jpeg;base64,";
+    delete data.av;                                     // server-owned version flag, like prod
+    const prevAv = (() => { try { return (JSON.parse(KV.get(slug) || "{}").d || {}).av || ""; } catch { return ""; } })();
+    if (typeof body.avatar === "string" && body.avatar.startsWith(AV)) {
+      KV.set("avatar:" + slug, Buffer.from(body.avatar.slice(AV.length), "base64"));
+      data.av = suffix(6);
+    } else if (body.avatar === null) { KV.delete("avatar:" + slug); }
+    else if (prevAv) data.av = prevAv;
+    const meta = (body.meta && typeof body.meta === "object") ? body.meta : {};
+    const prevMeta = (() => { try { return JSON.parse(KV.get(slug) || "{}").m || {}; } catch { return {}; } })();
+    meta.createdAt = prevMeta.createdAt || new Date().toISOString();
+    meta.updatedAt = new Date().toISOString();
+    KV.set(slug, JSON.stringify({ d: data, m: meta, t: token }));
     const PRE = "data:image/png;base64,";
     if (typeof body.img === "string" && body.img.startsWith(PRE)) KV.set("img:" + slug, Buffer.from(body.img.slice(PRE.length), "base64"));
     if (!(body.slug && body.editToken)) { // recent-created index (create only)
@@ -62,7 +76,7 @@ createServer(async (req, res) => {
       KV.set("pages:recent", JSON.stringify(recent.slice(0, 100)));
       KV.set("stat:creates", String((+KV.get("stat:creates") || 0) + 1)); // viral-loop output counter
     }
-    return send(res, 200, JSON.stringify({ slug, editToken: token }), { "content-type": "application/json" });
+    return send(res, 200, JSON.stringify({ slug, editToken: token, av: data.av || null }), { "content-type": "application/json" });
   }
 
   if (path === "/api/msgs") {
@@ -85,6 +99,7 @@ createServer(async (req, res) => {
       }
       const text = String(body.text || "").trim().slice(0, 140); if (!text) return send(res, 400, '{"error":"empty"}', { "content-type": "application/json" });
       if (/https?:\/\/|www\./i.test(text)) return send(res, 400, '{"error":"no links allowed"}', { "content-type": "application/json" });
+      if (arr.some(x => String(x.t || "").toLowerCase() === text.toLowerCase())) return send(res, 409, '{"error":"duplicate"}', { "content-type": "application/json" });
       const name = String(body.name || "").trim().slice(0, 24) || "anon";
       const c = "abcdefghijkmnpqrstuvwxyz23456789", b = new Uint8Array(6); crypto.getRandomValues(b); let mid = ""; for (const x of b) mid += c[x % c.length];
       const msg = { id: mid, n: name, t: text }; arr.unshift(msg); if (arr.length > 100) arr = arr.slice(0, 100);
@@ -98,6 +113,7 @@ createServer(async (req, res) => {
     let body; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { return send(res, 400, '{"error":"bad json"}', { "content-type": "application/json" }); }
     const slug = String(body.slug || ""); if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
     const field = body.ev === "view" ? "v" : body.ev === "cta" ? "c" : null; if (!field) return send(res, 400, '{"error":"bad event"}', { "content-type": "application/json" });
+    if (!KV.has(slug)) return send(res, 404, '{"error":"no such page"}', { "content-type": "application/json" });
     let stat = { v: 0, c: 0 }; try { const raw = KV.get("stat:" + slug); if (raw) { const o = JSON.parse(raw); stat = { v: +o.v || 0, c: +o.c || 0 }; } } catch {}
     stat[field]++; KV.set("stat:" + slug, JSON.stringify(stat));
     return send(res, 200, '{"ok":true}', { "content-type": "application/json" });
@@ -143,6 +159,24 @@ createServer(async (req, res) => {
       KV.set("wall:featured", JSON.stringify(list.slice(0, 24)));
       return send(res, 200, JSON.stringify({ featured: list }), { "content-type": "application/json" });
     }
+  }
+
+  // owner takes their own page down (edit token = identity, no accounts)
+  if (path === "/api/delete" && req.method === "POST") {
+    const chunks = []; for await (const c of req) chunks.push(c);
+    let body; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { return send(res, 400, '{"error":"bad json"}', { "content-type": "application/json" }); }
+    const slug = String(body.slug || ""); if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
+    const raw = KV.get(slug); if (!raw) return send(res, 404, '{"error":"not found"}', { "content-type": "application/json" });
+    let stored; try { stored = JSON.parse(raw); } catch { stored = null; }
+    if (!stored || !stored.t || stored.t !== body.editToken) return send(res, 403, '{"error":"forbidden"}', { "content-type": "application/json" });
+    for (const k of [slug, "img:" + slug, "avatar:" + slug, "msg:" + slug, "stat:" + slug]) KV.delete(k);
+    try { const r = JSON.parse(KV.get("pages:recent") || "[]"); if (Array.isArray(r)) KV.set("pages:recent", JSON.stringify(r.filter(x => x && x.slug !== slug))); } catch {}
+    return send(res, 200, JSON.stringify({ deleted: slug }), { "content-type": "application/json" });
+  }
+
+  if ((m = path.match(/^\/av\/([a-z0-9-]{2,40})$/)) && req.method === "GET") {
+    const jpg = KV.get("avatar:" + m[1]); if (!jpg) return send(res, 404, "not found");
+    return send(res, 200, jpg, { "content-type": "image/jpeg" });
   }
 
   if ((m = path.match(/^\/og\/([a-z0-9-]{2,40})$/)) && req.method === "GET") {

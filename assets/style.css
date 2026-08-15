@@ -116,6 +116,14 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); box-shadow: 0 14px 34px -12px rgba(0,213,99,0.7), inset 0 1px 0 rgba(255,255,255,0.25); }
 .btn-ghost { background: #fff; color: var(--ink); border-color: var(--line); }
 .btn-ghost:hover { border-color: var(--ink-faint); background: var(--bg-2); transform: translateY(-1px); }
+/* destructive action — deliberately quiet (an outline, not a red slab): it should be
+   findable when you want out, never the thing you hit by accident */
+.report-link { display: block; margin-top: 10px; font-size: 12px; color: var(--ink-faint); opacity: .75; }
+.report-link:hover { opacity: 1; color: var(--red); }
+.btn-danger { background: #fff; color: var(--red); border-color: rgba(255,84,104,0.45); }
+.btn-danger:hover { background: rgba(255,84,104,0.07); border-color: var(--red); transform: translateY(-1px); }
+.danger-zone { margin-top: 26px; padding-top: 20px; border-top: 1px dashed var(--line); }
+.danger-zone .hint { text-align: center; margin-top: 8px; }
 .btn-block { width: 100%; }
 .btn-lg { padding: 16px 28px; font-size: 16px; border-radius: 15px; }
 

@@ -13,7 +13,11 @@ the Vite build), backed by one **KV namespace**.
                       (derived from the user's handle; reserved names / collisions get a short `-suffix`)
 - `GET /<handle>`  → (`functions/[id].js`) serves the page with server-injected `og:*` tags + embedded
                       data. Falls through to static files for names with a `.`, reserved words, or non-slugs.
-- `GET /og/:id`    → serves the stored PNG (used as the OG image)
+- `GET /og/:id`    → serves the stored PNG (used as the OG image). Served `immutable` for a year,
+                      so `[id].js` appends `?v=<updatedAt>` — re-publishing must move the URL or every
+                      edge and browser keeps serving the OLD share image forever.
+- `POST /api/delete` → the page owner removes their own page (needs the `editToken`). Wipes the page,
+                      its avatar, share image, messages and counters. Admin takedown is `POST /api/wall {delete}`.
 
 `create.html` requires this backend (KV + the `/api/save` Function) to publish — there is no
 static fallback. If publishing fails it shows a retry toast. The landing page and `?demo=`
@@ -72,8 +76,19 @@ Dashboard → the `nomoney` Pages project → Custom domains → add `no.money`
 
 ## Notes / next
 
-- **Abuse:** `/api/save` is open. It caps JSON (8 KB) and PNG (~0.9 MB) per write. If it gets
-  abused, add Cloudflare Turnstile or a rate limit, and consider a KV TTL on anonymous pages.
+- **Abuse / rate limits** (all per-IP, best-effort KV counters — eventual consistency lets a tight
+  burst slip; they're abuse caps, not security boundaries). Raise the ceiling with Cloudflare WAF
+  rate-limit rules or Turnstile if any of them start getting hit by real traffic:
+  | Endpoint | Cap | Also |
+  |---|---|---|
+  | `POST /api/save` | 30 creates/IP/day | JSON ≤ 8 KB, PNG ≤ ~0.9 MB, avatar ≤ ~0.2 MB; edits are exempt (they need the token) |
+  | `POST /api/msgs` | 40 posts/IP/day | duplicate text rejected (409); links in text rejected |
+  | `POST /api/hit`  | 40 events/IP/day | slug must be an existing page |
+  | `POST /api/ai`   | `AI_RL_PER_MIN`/`AI_RL_PER_DAY` (default 8/min, 80/day) | protects Workers AI spend |
+- **Write budget:** free KV is ~1000 writes/day and a counted analytics event costs 2 of them
+  (counter + IP budget). Past ~500 engaged visits/day, move `/api/hit` to Workers Analytics Engine.
+- **Reports:** public pages link to `abuse@no.money` (`REPORT_EMAIL` in `src/p.js`) — point it at a real
+  inbox before launch, or reports go nowhere.
 - **Slugs are vanity**: `no.money/<handle>` from the user's handle; reserved names and collisions get a
   short random `-suffix` (account-less, so handles aren't owned/reserved — locking a handle is a future paid feature).
 - KV is eventually consistent (writes propagate in seconds) — fine for create-then-share.

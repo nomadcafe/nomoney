@@ -98,6 +98,12 @@ Now I'm surviving on instant noodles. Send help (or seasoning).</textarea>
 
       <button class="btn btn-primary btn-lg btn-block" id="publish" data-i18n="create.publish">Get my broke page →</button>
       <p class="hint" style="text-align:center" data-i18n="create.publish_note">No signup. Your page lives in a shareable link.</p>
+
+      <!-- edit mode only: your page is public and has your face on it — you get to take it down -->
+      <div class="danger-zone" id="dangerZone" style="display:none">
+        <button class="btn btn-danger btn-block" id="deletePage" data-i18n="create.delete_btn">Delete this page</button>
+        <p class="hint" data-i18n="create.delete_note">Removes the page, its photo, share image and messages. Can't be undone — the handle goes back up for grabs.</p>
+      </div>
     </div>
 
     <!-- preview -->

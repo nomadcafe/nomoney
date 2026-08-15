@@ -40,3 +40,20 @@ export async function patchIndexEntry(env, slug, patch) {
     await env.PAGES.put("pages:recent", JSON.stringify(recent));
   } catch (e) { /* index is best-effort */ }
 }
+
+// Permanently remove a page and everything attached to it. Shared by the owner's
+// own delete (api/delete.js, gated by the edit token) and admin takedowns (api/wall.js).
+// The slug becomes free to register again. Callers must have authorized the delete.
+export async function deletePage(env, slug) {
+  await Promise.all([
+    env.PAGES.delete(slug),              // the page itself
+    env.PAGES.delete("img:" + slug),     // its share image
+    env.PAGES.delete("avatar:" + slug),  // its avatar photo
+    env.PAGES.delete("msg:" + slug),     // its support messages
+    env.PAGES.delete("stat:" + slug),    // its view/CTA counters
+  ]);
+  try {                                  // drop from the activity index
+    const recent = JSON.parse((await env.PAGES.get("pages:recent")) || "[]");
+    if (Array.isArray(recent)) await env.PAGES.put("pages:recent", JSON.stringify(recent.filter(r => r && r.slug !== slug)));
+  } catch (e) { /* index is best-effort */ }
+}
