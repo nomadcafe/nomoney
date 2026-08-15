@@ -45,8 +45,13 @@ example pages are still fully static.
 ## Deploy
 
 ```sh
-wrangler pages deploy .
+npm run build && wrangler pages deploy
 ```
+
+**Not `wrangler pages deploy .`** — the positional argument overrides
+`pages_build_output_dir = "dist"` in `wrangler.toml` and uploads the repo root instead,
+which ships unbuilt `src/` modules (the browser can't run them: `core.js` imports CSS)
+and everything else in the directory. With no argument, wrangler uses `dist/`.
 
 After the first deploy, bind KV to the Pages project so the Functions can see it
 (Dashboard → Workers & Pages → nomoney → Settings → Functions → KV namespace bindings:
