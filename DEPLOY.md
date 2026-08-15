@@ -53,6 +53,22 @@ After the first deploy, bind KV to the Pages project so the Functions can see it
 add **Variable name `PAGES`** → your `PAGES` namespace, for **both** Production and Preview).
 `wrangler.toml` covers `wrangler pages dev`, but the dashboard binding is what production uses.
 
+## Environment variables
+
+Set these on the Pages project (Dashboard → Workers & Pages → nomoney → Settings →
+Variables and Secrets), for **Production and Preview**:
+
+| Name | Required | What breaks without it |
+|---|---|---|
+| `WALL_ADMIN_TOKEN` | **yes, to use `/admin`** | `POST /api/wall` returns `403 curation disabled` — you cannot feature pages, see the funnel, rebuild the index or take a page down from the UI. Set it to a long random string (`openssl rand -hex 24`) and paste the same string into the token box at `/admin`. |
+| `AI_RL_PER_MIN` | no (default 8) | Public per-IP ceiling on the AI rewrite button = your real one. Override so it isn't. |
+| `AI_RL_PER_DAY` | no (default 80) | Same, per day. |
+
+`/admin` is unlisted, `noindex`, and gated only by this token — the token IS the admin
+account. Without it set, curation is disabled rather than open, which is the safe default.
+Fallback if you'd rather not set it: curate by hand with
+`wrangler kv key put --binding=PAGES wall:featured '["slug-a","slug-b"]'`.
+
 ## Custom domain
 
 Dashboard → the `nomoney` Pages project → Custom domains → add `no.money`
@@ -94,6 +110,11 @@ Dashboard → the `nomoney` Pages project → Custom domains → add `no.money`
   something the dashboard shows for free. `/api/hit` only measures what the dashboard can't see
   (per-page share acts, make-mine clicks, tip-link clicks).
 - **Reports:** public pages link to `hello@keki.ai` (`REPORT_EMAIL` in `src/p.js`).
+- **Individual pages are `noindex,follow`** (injected by `functions/[id].js`). Growth is sharing,
+  not SEO — and no accounts means anyone can put their face on a permanent URL. Social previews are
+  unaffected: `og:*`/`twitter:*` scrapers don't read the robots meta. `sitemap.xml` lists only `/`
+  and `/create.html`, which stay indexable. Reverse by deleting one line if you ever want the pages
+  in search.
 - **Slugs are vanity**: `no.money/<handle>` from the user's handle; reserved names and collisions get a
   short random `-suffix` (account-less, so handles aren't owned/reserved — locking a handle is a future paid feature).
 - KV is eventually consistent (writes propagate in seconds) — fine for create-then-share.

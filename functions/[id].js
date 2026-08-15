@@ -41,6 +41,13 @@ export async function onRequestGet(context) {
   html = html.replace(/<title>.*?<\/title>/, `<title>${esc(title)}</title>`); // real title for crawlers/tab
 
   const inject =
+    // Keep individual pages OUT of search. Growth here is sharing, not SEO (the sitemap
+    // only lists / and /create.html), and the long-tail search value of "X is 87% broke"
+    // is ~zero — while the cost is real: no accounts means anyone can put their face and
+    // "I'm broke" on a permanent URL their employer can google. noindex is also the
+    // reversible direction: dropping it later gets you indexed, adding it later doesn't
+    // un-index quickly. Social previews are unaffected — og:*/twitter:* scrapers ignore this.
+    `<meta name="robots" content="noindex,follow">` +
     `<link rel="canonical" href="${esc(pageUrl)}">` +
     `<meta property="og:title" content="${esc(title)}">` +
     `<meta property="og:description" content="${esc(desc)}">` +

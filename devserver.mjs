@@ -27,7 +27,7 @@ function renderPage(html, id, host) {
   const desc = meta.desc || "Help them become slightly less broke.";
   html = html.replace("<head>", '<head><base href="/">');
   html = html.replace(/<title>.*?<\/title>/, `<title>${esc(title)}</title>`);
-  const inject = `<link rel="canonical" href="${esc(pageUrl)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(ogImg)}"><meta property="og:url" content="${esc(pageUrl)}"><meta property="og:type" content="profile"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${esc(ogImg)}"><script>window.__PAGE__=${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
+  const inject = `<meta name="robots" content="noindex,follow"><link rel="canonical" href="${esc(pageUrl)}"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:image" content="${esc(ogImg)}"><meta property="og:url" content="${esc(pageUrl)}"><meta property="og:type" content="profile"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${esc(ogImg)}"><script>window.__PAGE__=${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
   return html.replace("</head>", inject + "</head>");
 }
 
