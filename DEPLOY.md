@@ -66,6 +66,7 @@ Variables and Secrets), for **Production and Preview**:
 | Name | Required | What breaks without it |
 |---|---|---|
 | `WALL_ADMIN_TOKEN` | **yes, to use `/admin`** | `POST /api/wall` returns `403 curation disabled` — you cannot feature pages, see the funnel, rebuild the index or take a page down from the UI. Set it to a long random string (`openssl rand -hex 24`) and paste the same string into the token box at `/admin`. |
+| `AI_MODEL` | no (default `@cf/meta/llama-3.1-8b-instruct-fp8`) | Nothing immediately — but Cloudflare **retires model slugs without notice** (this is how `@cf/meta/llama-3.1-8b-instruct` vanished and `/api/ai` 502'd for every user). When the AI button starts failing, run `wrangler ai models`, pick a current one, and set this — no redeploy needed. |
 | `AI_RL_PER_MIN` | no (default 8) | Public per-IP ceiling on the AI rewrite button = your real one. Override so it isn't. |
 | `AI_RL_PER_DAY` | no (default 80) | Same, per day. |
 

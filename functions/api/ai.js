@@ -2,7 +2,12 @@
 // Rewrites / generates a funny broke "sob story" via Cloudflare Workers AI.
 // Client falls back to local curated lines if this fails.
 
-const MODEL = "@cf/meta/llama-3.1-8b-instruct";
+// Workers AI retires model slugs without notice — "@cf/meta/llama-3.1-8b-instruct"
+// silently disappeared from the catalogue and this endpoint 502'd for every user
+// until someone checked. Keep it overridable from the dashboard (env AI_MODEL) so
+// the next retirement is a variable edit, not a redeploy, and check the current
+// list with `wrangler ai models` when it breaks again.
+const DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";   // the drop-in successor
 const MAX_OUT = 240;
 
 function json(obj, status = 200) {
@@ -62,6 +67,7 @@ const DEFAULT_PER_DAY = 80;  // ... per day
 export async function onRequestPost({ request, env }) {
   if (!env.AI) return json({ error: "ai not configured" }, 500);
 
+  const model = String(env.AI_MODEL || "").trim() || DEFAULT_MODEL;
   const perMin = Number(env.AI_RL_PER_MIN) || DEFAULT_PER_MIN;
   const perDay = Number(env.AI_RL_PER_DAY) || DEFAULT_PER_DAY;
 
@@ -92,7 +98,7 @@ export async function onRequestPost({ request, env }) {
 
   let out;
   try {
-    const res = await env.AI.run(MODEL, {
+    const res = await env.AI.run(model, {
       messages: [{ role: "system", content: p.system }, { role: "user", content: user }],
       max_tokens: 160,
       temperature: 0.9,
