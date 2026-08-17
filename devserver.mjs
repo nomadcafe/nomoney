@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { RESERVED } from "./functions/_reserved.js";
+import { moderate } from "./functions/_moderation.js";
 
 const ROOT = process.cwd();
 const PORT = 8766;
@@ -53,6 +54,8 @@ createServer(async (req, res) => {
       if (taken(slug)) { for (let i = 0; i < 8; i++) { slug = `${root}-${suffix(i < 4 ? 3 : 5)}`; if (!taken(slug)) break; } }
       token = newToken();
     }
+    const violation = moderate(data);
+    if (violation) return send(res, 422, JSON.stringify({ error: "blocked", reason: violation }), { "content-type": "application/json" });
     data.handle = slug; // keep the displayed handle == the real URL
     const AV = "data:image/jpeg;base64,";
     delete data.av;                                     // server-owned version flag, like prod

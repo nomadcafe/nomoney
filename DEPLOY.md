@@ -137,6 +137,13 @@ actions. That surfaces as frozen numbers in `/admin`.
   something the dashboard shows for free. `/api/hit` only measures what the dashboard can't see
   (per-page share acts, make-mine clicks, tip-link clicks).
 - **Reports:** public pages link to `hello@keki.ai` (`REPORT_EMAIL` in `src/p.js`).
+- **Content rules** live in `functions/_moderation.js`, shared by the editor and `/api/save`
+  (422 `{error:"blocked", reason}`) so a page can't be published past a rule the editor didn't
+  show. They target *promotion*, never confession: "I lost my rent gambling" and "Bought high.
+  Panicked. Sold low." are preset copy on this site and must always publish. Blocked instead:
+  links to bookmakers/casinos, tipster idiom that sells picks, and promises of returns.
+  Verified against all 125 live pages — 2 hits, both real tipster pages, zero false positives.
+  Pages that predate the rules are left in place and flagged in `/admin` (🚫 badge + filter).
 - **Individual pages are `noindex,follow`** (injected by `functions/[id].js`). Growth is sharing,
   not SEO — and no accounts means anyone can put their face on a permanent URL. Social previews are
   unaffected: `og:*`/`twitter:*` scrapers don't read the robots meta. `sitemap.xml` lists only `/`

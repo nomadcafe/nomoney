@@ -142,6 +142,16 @@ await check("publish rejects a brand-spoofing link", async () => {
   return "userinfo spoof blocked";
 });
 
+await check("content rules block gambling promotion", async () => {
+  const r = await post("/api/save", { data: { handle: "zz-healthcheck", name: "hc", status: "ramen",
+    story: "Sure odds today, fixed matches available. DM for VIP tips.",
+    links: [{ kind: "cashapp", url: "https://cash.app/$hc" }] } });
+  const j = await r.json().catch(() => ({}));
+  assert(r.status === 422 && j.reason === "gambling",
+    `expected 422/gambling, got ${r.status}/${JSON.stringify(j)} — if this SAVED, a tipster page was just published; delete it`);
+  return "tipster pages blocked";
+});
+
 /* ---------- report ---------- */
 const failed = results.filter(r => !r.ok);
 const pad = Math.max(...results.map(r => r.name.length));

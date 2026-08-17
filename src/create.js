@@ -471,6 +471,15 @@ async function publish() {
     return;
   }
 
+  // content rules (gambling promotion, promised returns). Same module the server runs,
+  // so this can't disagree with it — the editor just says so first.
+  const violation = NM.moderate(data);
+  if (violation) {
+    toast(t("mod." + violation));
+    publishing = false;
+    return;
+  }
+
   // a branded button (PayPal, Ko-fi, …) must actually link to that brand — no spoofing
   const offBrand = data.links.find(l => NM.brandMismatch(l.kind, l.url));
   if (offBrand) {
@@ -508,7 +517,8 @@ async function publish() {
 
   if (!result || !result.slug) {
     // tell the truth about WHY it failed instead of always blaming the connection
-    const msg = errStatus === 403 ? t("toast.edit_invalid")
+    const msg = errStatus === 422 ? t("mod.gambling")
+              : errStatus === 403 ? t("toast.edit_invalid")
               : errStatus === 429 ? t("toast.rate_limited")
               : errStatus === 413 ? t("toast.too_large")
               : errStatus === 415 ? t("toast.bad_image")

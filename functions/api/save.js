@@ -7,6 +7,7 @@
 import { RESERVED } from "../_reserved.js";
 import { indexEntry } from "../_page.js";
 import { sanitizeLinks } from "../_links.js";
+import { moderate } from "../_moderation.js";
 
 const SUFFIX_CHARS = "abcdefghijkmnpqrstuvwxyz23456789"; // no 0/o/1/l ambiguity
 const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -122,6 +123,11 @@ export async function onRequestPost({ request, env }) {
   data.links = sanitizeLinks(data.links);
   // tipping is the whole point — a page with no working link is a wasted share. require one.
   if (!data.links.length) return json({ error: "no links" }, 400);
+
+  // content rules. Runs on edits too — otherwise you publish something clean and swap
+  // the story afterwards. Checked AFTER sanitizeLinks so it sees the final buttons.
+  const violation = moderate(data);
+  if (violation) return json({ error: "blocked", reason: violation }, 422);
 
   // avatar photo — image bytes can't live in the 8 KB page JSON, so they're stored
   // out-of-band at "avatar:"+slug (like the share image at "img:"+slug) and served

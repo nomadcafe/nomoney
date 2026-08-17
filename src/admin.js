@@ -120,6 +120,7 @@ function sortedFiltered() {
   let list = allRecent.slice();
   if ($("#onlyEmpty").checked) list = list.filter(p => p.empty);
   if ($("#onlyDead").checked) list = list.filter(p => p.dead);
+  if ($("#onlyFlagged").checked) list = list.filter(p => p.flag);
   const q = $("#searchBox").value.trim().toLowerCase();
   if (q) list = list.filter(p => (p.name || "").toLowerCase().includes(q) || (p.slug || "").toLowerCase().includes(q));
   const sort = $("#sortBy").value;
@@ -145,8 +146,9 @@ function renderSummary() {
   const empty = allRecent.filter(p => p.empty).length;
   const stale = allRecent.filter(p => { const d = daysSince(p.updatedAt); return d != null && d >= STALE_DAYS; }).length;
   const dead = allRecent.filter(p => p.dead && !p.empty).length;
+  const flagged = allRecent.filter(p => p.flag).length;
   const alive = allRecent.filter(p => (p.msgs || 0) > 0).length;
-  el.textContent = `${n} pages · ${alive} with messages · ${dead} with dead tip links · ${empty} empty · ${stale} dormant (${STALE_DAYS}d+) · ${onWall.size} on wall`;
+  el.textContent = `${n} pages · ${alive} with messages · ${dead} with dead tip links · ${flagged} breaking content rules · ${empty} empty · ${stale} dormant (${STALE_DAYS}d+) · ${onWall.size} on wall`;
 }
 
 function renderRecent() {
@@ -167,6 +169,7 @@ function renderRecent() {
       ((p.msgs || 0) > 0 ? `<span class="admin-tag admin-tag-live">💬 ${p.msgs}</span>` : "") +
       (p.empty ? `<span class="admin-tag admin-tag-warn">empty</span>` : "") +
       (p.dead && !p.empty ? `<span class="admin-tag admin-tag-warn" title="every tip button on this page goes nowhere — a username or email was typed into the URL box">💀 dead link</span>` : "") +
+      (p.flag ? `<span class="admin-tag admin-tag-warn" title="breaks the content rules (${esc(p.flag)}) — publishing blocks this now, but this page predates the rule">🚫 ${esc(p.flag)}</span>` : "") +
       (stale ? `<span class="admin-tag">stale ${relTime(p.updatedAt)}</span>` : "");
     const meta = p.createdAt || p.updatedAt
       ? `created ${relTime(p.createdAt)} · edited ${relTime(p.updatedAt)}`
@@ -252,6 +255,7 @@ $("#logout").onclick = () => { token = ""; try { localStorage.removeItem(TOKEN_K
 $("#sortBy").onchange = renderRecent;
 $("#onlyEmpty").onchange = renderRecent;
 $("#onlyDead").onchange = renderRecent;
+$("#onlyFlagged").onchange = renderRecent;
 let searchT;
 $("#searchBox").oninput = () => { clearTimeout(searchT); searchT = setTimeout(renderRecent, 120); };
 $("#refresh").onclick = () => { toast("Refreshing…"); load(); };

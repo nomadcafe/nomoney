@@ -2,6 +2,7 @@
 // Used by save.js (maintain the recent index) and wall.js (rebuild it from KV).
 
 import { normalizeTipUrl } from "./_links.js";
+import { moderate } from "./_moderation.js";
 
 // An "empty" page is a registered handle that never got real content —
 // no story and no support links. The squatter signal for reclaiming.
@@ -37,6 +38,9 @@ export function indexEntry(slug, d, m, msgs = 0) {
     updatedAt: m.updatedAt || null,
     empty: isEmptyPage(d),
     dead: hasDeadLinks(d),
+    // pages that predate the content rules — publishing blocks these now, but existing
+    // ones stay until someone decides. /admin needs to see them to make that call.
+    flag: moderate(d) || "",
     msgs: Number(msgs) || 0,
   };
 }
