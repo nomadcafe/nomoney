@@ -96,6 +96,27 @@ Dashboard → the `nomoney` Pages project → Custom domains → add `no.money`
   ```
   `devserver.mjs` is a test-only helper; it is not part of the deploy.
 
+## Health check
+
+```sh
+node scripts/healthcheck.mjs                 # production
+node scripts/healthcheck.mjs http://localhost:8766
+```
+
+Runs daily via `.github/workflows/health-check` and on demand (Actions → health check →
+Run workflow). A failing scheduled run emails the repo owner — that's the whole alerting
+setup, no extra service.
+
+It asserts **meaning, not status codes**, because every failure this product has had was
+silent: `/api/ai` 502'd for days while the editor served canned lines and looked fine; a
+broken `/api/wall` makes the homepage wall `display:none` itself; a broken `/api/hit`
+reads as "nobody shares", which is the exact conclusion the roadmap acts on. It is
+read-only, so it can't skew `stat:creates` or the activity index.
+
+**Known gap, stated rather than hidden:** a KV *write* outage (e.g. the free ~1000
+writes/day budget exhausted) is not detected, because writes only happen on real user
+actions. That surfaces as frozen numbers in `/admin`.
+
 ## Notes / next
 
 - **Abuse / rate limits** (all per-IP, best-effort KV counters — eventual consistency lets a tight

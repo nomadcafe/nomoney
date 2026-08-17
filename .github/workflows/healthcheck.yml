@@ -1,0 +1,39 @@
+# Daily production health check for no.money.
+#
+# Exists because /api/ai returned 502 for every user for an unknown number of days
+# and nothing surfaced it: the editor falls back to canned lines, so the feature
+# looked alive. Several other failures are equally quiet — a broken /api/wall makes
+# the homepage wall silently vanish, and a broken /api/hit reads as "nobody shares",
+# which is the exact conclusion the roadmap acts on.
+#
+# A failing run emails whoever owns the repo (GitHub does this for scheduled
+# workflows automatically — no extra service, no secrets, no infrastructure).
+name: health check
+
+on:
+  schedule:
+    - cron: "17 8 * * *"     # 08:17 UTC daily. Off the hour on purpose: cron
+                             # minute 0 is the most contended slot on Actions.
+  workflow_dispatch:          # so you can run it by hand after a deploy
+    inputs:
+      origin:
+        description: "Origin to check"
+        required: false
+        default: "https://no.money"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # No install step — the script uses only built-in fetch, so there is nothing
+      # to break in the check itself. A health check with dependencies can rot.
+      - name: Probe production
+        run: node scripts/healthcheck.mjs "${{ inputs.origin || 'https://no.money' }}"
