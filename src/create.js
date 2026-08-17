@@ -4,7 +4,6 @@ const t = (k) => window.I18N.t(k);
 const lang = () => window.I18N.lang;
 const mustMatch = (host) => t("link.must_match").replace("{host}", host);
 let status = "ramen";
-let storyTouched = false; // becomes true once the user types their own story — then we never auto-overwrite it
 let handleTouched = false; // once the user edits the handle, stop auto-deriving it from the name
 let emoji = "";           // custom avatar emoji; "" = use the broke status' default
 let editingSlug = null;   // when set, publishing UPDATES this slug instead of creating a new page
@@ -182,8 +181,8 @@ function buildChips() {
       document.querySelectorAll(".chip").forEach(x => { x.classList.remove("on"); x.setAttribute("aria-pressed", "false"); });
       b.classList.add("on");
       b.setAttribute("aria-pressed", "true");
-      // only swap in this status' default story if the user hasn't written their own
-      if (!storyTouched) $("#f-story").value = NM.locStatus(NM.STATUSES[k]).story;
+      // render() moves the placeholder to this status' default; the box itself stays
+      // whatever the user wrote (or stays empty, asking them to write something)
       render();
     };
     c.appendChild(b);
@@ -231,9 +230,9 @@ function buildLinks() {
       const exHandle = NM.splitHandle(l.kind, kindMeta.ex || "").value || "you";
       urlField =
         `<div class="link-handle"><span class="link-prefix">${esc(prefix)}</span>` +
-        `<input class="link-url" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="${esc(exHandle)}" value="${esc(sp.value)}" /></div>`;
+        `<input class="link-url" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" aria-label="${esc(prefix)}" placeholder="${esc(exHandle)}" value="${esc(sp.value)}" /></div>`;
     } else {
-      urlField = `<input class="link-url" type="text" placeholder="${esc(kindMeta.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />`;
+      urlField = `<input class="link-url" type="text" autocapitalize="none" autocomplete="off" spellcheck="false" aria-label="${esc(t("link.url_ph"))}" placeholder="${esc(kindMeta.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />`;
     }
 
     // handle mode can't mismatch a brand (we build the URL), but it can still be a
@@ -242,8 +241,8 @@ function buildLinks() {
     const warn = warnMsg ? `<p class="link-warn">${esc(warnMsg)}</p>` : "";
 
     row.innerHTML =
-      `<div class="link-top"><select>${opts}</select><button class="link-del" title="remove" aria-label="Remove link">×</button></div>` +
-      `<input class="link-label" type="text" maxlength="40" placeholder="${esc(t("link.btn_text_ph") + defLabel)}" value="${esc(l.label || "")}" />` +
+      `<div class="link-top"><select aria-label="${esc(t("create.links"))}">${opts}</select><button class="link-del" title="remove" aria-label="Remove link">×</button></div>` +
+      `<input class="link-label" type="text" maxlength="40" aria-label="${esc(t("link.btn_text_ph"))}" placeholder="${esc(t("link.btn_text_ph") + defLabel)}" value="${esc(l.label || "")}" />` +
       urlField + warn;
 
     row.querySelector("select").onchange = e => {
@@ -310,9 +309,12 @@ function toast(t) { const el = $("#toast"); el.textContent = t; el.classList.add
 
 function render() {
   const data = gather();
-  $("#handlePrev").textContent = data.handle;
+  $("#handlePrev").textContent = $("#f-handle").value.trim() ? data.handle : t("create.handle_ph");
   $("#storyCount").textContent = $("#f-story").value.length + "/240";
   const st = NM.locStatus(NM.STATUSES[data.status]);
+  // the preset lives in the placeholder, never in the value: an empty box asks a
+  // question, a filled one says you're done — and 77% of pages shipped that answer
+  $("#f-story").placeholder = st.story;
   const bs = NM.brokeScore(data);
   const root = document.documentElement;
   root.style.setProperty("--accent", st.accent);
@@ -360,7 +362,7 @@ function writeDraft() {
     localStorage.setItem("nm:draft", JSON.stringify({
       name: $("#f-name").value, handle: $("#f-handle").value, status, emoji,
       story: $("#f-story").value,
-      links, storyTouched, handleTouched,
+      links, handleTouched,
       avatar: avatarData,   // a freshly picked photo survives a refresh (small JPEG data URL)
     }));
   } catch (e) { /* private mode / quota — ignore */ }
@@ -381,7 +383,6 @@ function restoreDraft() {
     if (Array.isArray(d.links) && d.links.length) {
       links = d.links.map(l => ({ kind: NM.canonKind(l.kind), url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
     }
-    storyTouched = !!d.storyTouched;
     handleTouched = !!d.handleTouched;
   } catch (e) { /* corrupt draft — ignore */ }
 }
@@ -402,7 +403,6 @@ $("#aiBtn").onclick = async (e) => {
 
   if (text) {
     $("#f-story").value = text.slice(0, 240);
-    storyTouched = true;            // keep the AI line; don't let a status switch overwrite it
     toast(t("toast.ai_done"));
   } else if (lang() !== "en") {     // non-en: no curated EN rotation — fall back to the localized status story
     $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
@@ -417,7 +417,7 @@ $("#aiBtn").onclick = async (e) => {
   render();
 };
 
-$("#f-story").addEventListener("input", () => { storyTouched = true; render(); });
+$("#f-story").addEventListener("input", render);
 $("#f-name").addEventListener("input", () => {
   if (!handleTouched) $("#f-handle").value = slugify($("#f-name").value); // handle follows the name until edited
   render();
@@ -431,7 +431,6 @@ const pick = a => a[Math.floor(Math.random() * a.length)];
 $("#surprise").onclick = () => {
   status = pick(NM.STATUS_ORDER);
   $("#f-story").value = lang() !== "en" ? NM.locStatus(NM.STATUSES[status]).story : pick(AI_LINES[status] || AI_LINES.ramen);
-  storyTouched = true;
   const nm = pick(PERSONA_NAMES);
   $("#f-name").value = nm;
   handleTouched = false;                       // let the handle follow the new name again
@@ -654,7 +653,6 @@ async function loadForEdit(slug, t2) {
   avatarData = null; avatarRemoved = false;
   avatarExisting = d.av ? ("/av/" + slug + "?v=" + encodeURIComponent(d.av)) : "";
   if (Array.isArray(d.links) && d.links.length) links = d.links.map(l => ({ kind: NM.canonKind(l.kind), url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
-  storyTouched = true;
   let token = t2; try { token = token || localStorage.getItem("nm:edit:" + slug); } catch (e) {}
   enterEditMode(slug, token);
   if (!token) toast(t("toast.no_edit_access"));
@@ -747,12 +745,10 @@ async function openShareFor(slug) {
   if (!willEdit) document.documentElement.classList.remove("loading-edit"); // clear stray loading state (e.g. bad ?edit=)
   if (!editSlug) {
     const s = qp.get("status");
-    if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) {
-      status = s; $("#f-story").value = NM.locStatus(NM.STATUSES[s]).story;
-    } else {
-      restoreDraft();
-    }
-    if (!storyTouched) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story; // default story in active language
+    // arriving from someone else's page via "Make mine" pre-selects their broke status,
+    // but still doesn't pre-write the story — the placeholder shows what you'd get
+    if (s && Object.prototype.hasOwnProperty.call(NM.STATUSES, s)) status = s;
+    else restoreDraft();
   }
   window.I18N.apply();                                   // translate static [data-i18n] text
   document.title = t("title.create");
@@ -763,7 +759,6 @@ async function openShareFor(slug) {
 
 // re-render dynamic content on language switch (the picker itself is wired in i18n.js)
 window.addEventListener("langchange", () => {
-  if (!storyTouched && !editingSlug) $("#f-story").value = NM.locStatus(NM.STATUSES[status]).story;
   buildChips(); buildEmoji(); buildLinks(); render(); syncAvatarUI();
   applyEditModeText();   // setLang re-applied [data-i18n], which would reset edit-mode header/button
   document.title = t("title.create");
