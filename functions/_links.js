@@ -59,7 +59,13 @@ export function normalizeTipUrl(kind, raw) {
       const rest = s.replace(/^https?:\/\//i, "");
       return (rest === authority && EMAIL_RE.test(authority)) ? "mailto:" + authority : "";
     }
-    return authority.includes(".") ? s : "";          // "https://localhost" etc. — no host
+    if (!authority.includes(".")) return "";          // "https://localhost" etc. — no host
+    // A branded payment button pointing at the brand's front door is not a tip link:
+    // "https://paypal.com" or "https://alipay.com" with nothing after it sends supporters
+    // to a homepage, not to you. Live data had 14 of these. Free-form kinds are left alone
+    // — a bare domain there can legitimately be someone's own donation page.
+    if (BRAND_HOSTS[kind] && !s.replace(/^https?:\/\//i, "").slice(authority.length).replace(/^\/+/, "")) return "";
+    return s;
   }
 
   if (EMAIL_RE.test(s)) return "mailto:" + s;         // bare email → the thing they meant
@@ -73,7 +79,10 @@ export function tipUrlProblem(kind, raw) {
   const s = String(raw || "").trim();
   if (!s || ADDRESS_KINDS.has(kind)) return "";
   if (normalizeTipUrl(kind, s)) return "";
-  return /^https?:\/\/[^/]*@/i.test(s) ? "spoof" : "notlink";
+  if (/^https?:\/\/[^/]*@/i.test(s)) return "spoof";
+  const host = String(s).replace(/^https?:\/\//i, "").split(/[/?#]/)[0];
+  if (BRAND_HOSTS[kind] && host.includes(".") && !s.replace(/^https?:\/\//i, "").slice(host.length).replace(/^\/+/, "")) return "nohandle";
+  return "notlink";
 }
 
 // Parse the registrable host from a user-entered URL (bare domains get https://).

@@ -96,6 +96,7 @@ const STR = {
     "toast.edit_copied": "Edit link copied — save it somewhere safe 🔒",
     "link.must_match": "This button must link to {host}",
     "link.notlink": "That's not a link — paste the full address people should land on (or pick Crypto for a wallet, or type your email).",
+    "link.nohandle": "That link goes to the site's front page, not to you — add your username or payment link after it.",
     "link.spoof": "This link really goes to whatever comes after the “@”. Paste the real address.",
   },
   zh: {
@@ -191,6 +192,7 @@ const STR = {
     "toast.edit_copied": "编辑链接已复制——请妥善保存 🔒",
     "link.must_match": "这个按钮的链接必须指向 {host}",
     "link.notlink": "这不是一个链接——请贴上别人点进去应该到达的完整地址（钱包地址请选「加密货币」，也可以直接填邮箱）。",
+    "link.nohandle": "这个链接只到该网站首页，不会到你手上——后面要加上你的用户名或收款链接。",
     "link.spoof": "这个链接实际会跳到「@」后面的域名。请贴上真正的地址。",
   },
   es: {
@@ -286,6 +288,7 @@ const STR = {
     "toast.edit_copied": "Enlace de edición copiado — guárdalo en un lugar seguro 🔒",
     "link.must_match": "Este botón debe enlazar a {host}",
     "link.notlink": "Eso no es un enlace — pega la dirección completa a la que debe llegar la gente (o elige Cripto para una wallet, o escribe tu email).",
+    "link.nohandle": "Ese enlace lleva a la portada del sitio, no a ti — añade tu usuario o enlace de cobro después.",
     "link.spoof": "Este enlace en realidad va a lo que viene después de la «@». Pega la dirección real.",
   },
   ja: {
@@ -381,6 +384,7 @@ const STR = {
     "toast.edit_copied": "編集リンクをコピー——安全な場所に保管を 🔒",
     "link.must_match": "このボタンは {host} にリンクする必要があります",
     "link.notlink": "これはリンクではありません——実際にたどり着く完全なアドレスを貼ってください（ウォレットは「暗号資産」を選択、メールアドレスでも可）。",
+    "link.nohandle": "そのリンクはサイトのトップページ止まりで、あなたには届きません——後ろにユーザー名や受取リンクを付けてください。",
     "link.spoof": "このリンクは実際には「@」の後のドメインに飛びます。本当のアドレスを貼ってください。",
   },
 };

@@ -199,6 +199,7 @@ function linkWarnText(l) {
   if (!u) return "";                                  // empty is "unfinished", not "wrong"
   const problem = NM.tipUrlProblem(l.kind, u);
   if (problem === "spoof") return t("link.spoof");
+  if (problem === "nohandle") return t("link.nohandle");
   if (problem === "notlink") return t("link.notlink");
   const host = NM.brandHostFor(l.kind);
   return (host && NM.brandMismatch(l.kind, u)) ? mustMatch(host) : "";
@@ -454,7 +455,8 @@ async function publish() {
   // on gmail.com. Fail loudly here rather than letting the server quietly drop it.
   const broken = typed.find(l => !NM.normalizeTipUrl(l.kind, l.url));
   if (broken) {
-    toast(NM.tipUrlProblem(broken.kind, broken.url) === "spoof" ? t("link.spoof") : t("link.notlink"));
+    const why = NM.tipUrlProblem(broken.kind, broken.url);
+    toast(why === "spoof" ? t("link.spoof") : why === "nohandle" ? t("link.nohandle") : t("link.notlink"));
     buildLinks();           // surface the inline warning on the offending row
     publishing = false;
     return;
