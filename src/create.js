@@ -191,13 +191,24 @@ function buildChips() {
 }
 
 let links = [{ kind: "ramen", url: "" }];
-// live-toggle the "must link to <brand>" warning under a row as the URL is typed
-function updateLinkWarn(row, l) {
+// what's wrong with this row's URL right now, as a ready-to-show sentence ("" = fine).
+// Two failure modes, in order of severity: the value doesn't go anywhere at all, or it
+// goes somewhere that isn't the brand on the button.
+function linkWarnText(l) {
+  const u = (l.url || "").trim();
+  if (!u) return "";                                  // empty is "unfinished", not "wrong"
+  const problem = NM.tipUrlProblem(l.kind, u);
+  if (problem === "spoof") return t("link.spoof");
+  if (problem === "notlink") return t("link.notlink");
   const host = NM.brandHostFor(l.kind);
-  const bad = host && l.url && l.url.trim() && NM.brandMismatch(l.kind, l.url);
+  return (host && NM.brandMismatch(l.kind, u)) ? mustMatch(host) : "";
+}
+// live-toggle that warning under a row as the URL is typed
+function updateLinkWarn(row, l) {
+  const msg = linkWarnText(l);
   let el = row.querySelector(".link-warn");
-  if (bad && !el) { el = document.createElement("p"); el.className = "link-warn"; row.appendChild(el); }
-  if (bad) el.textContent = mustMatch(host);
+  if (msg && !el) { el = document.createElement("p"); el.className = "link-warn"; row.appendChild(el); }
+  if (msg) el.textContent = msg;
   else if (el) el.remove();
 }
 function buildLinks() {
@@ -224,12 +235,10 @@ function buildLinks() {
       urlField = `<input class="link-url" type="text" placeholder="${esc(kindMeta.ex || "https://your-link.com")}" value="${esc(l.url || "")}" />`;
     }
 
-    // a branded full-URL must match its brand; handle mode can't mismatch (we build the URL)
-    const host = NM.brandHostFor(l.kind);
-    const mism = sp.mode === "full" && host && l.url && l.url.trim() && NM.brandMismatch(l.kind, l.url);
-    const warn = mism
-      ? `<p class="link-warn">${mustMatch(host)}</p>`
-      : "";
+    // handle mode can't mismatch a brand (we build the URL), but it can still be a
+    // username typed where a link belongs — so both modes get the same check
+    const warnMsg = sp.mode === "full" ? linkWarnText(l) : "";
+    const warn = warnMsg ? `<p class="link-warn">${esc(warnMsg)}</p>` : "";
 
     row.innerHTML =
       `<div class="link-top"><select>${opts}</select><button class="link-del" title="remove" aria-label="Remove link">×</button></div>` +
@@ -431,14 +440,6 @@ $("#surprise").onclick = () => {
   toast(t("toast.surprise"));
 };
 
-// turn "paypal.me/you" into "https://paypal.me/you", but leave real schemes (http:, bitcoin:) and raw crypto addresses alone
-function normUrl(u) {
-  u = (u || "").trim();
-  if (!u || /^[a-z][a-z0-9+.-]*:/i.test(u)) return u;     // already has a scheme
-  if (/^[^\s]+\.[^\s]+/.test(u)) return "https://" + u;   // looks like a bare domain/path
-  return u;                                                // raw token (e.g. wallet address)
-}
-
 // publish
 const base = location.pathname.replace(/[^/]*$/, "");  // directory, ends with "/"
 let publishing = false;
@@ -447,9 +448,18 @@ async function publish() {
   if (publishing) return;            // guard against double-clicks (both buttons)
   publishing = true;
   const data = gather();
-  data.links = data.links
-    .filter(l => l.url && l.url.trim())                       // don't ship dead buttons (no URL)
-    .map(l => ({ ...l, url: NM.safeUrl(normUrl(l.url)) }));   // fix missing https:// + strip unsafe schemes
+  const typed = data.links.filter(l => l.url && l.url.trim());
+  // A link that can't reach a destination is the #1 way a real page ends up useless —
+  // a username or an email in the URL box used to ship as a button that 404s or lands
+  // on gmail.com. Fail loudly here rather than letting the server quietly drop it.
+  const broken = typed.find(l => !NM.normalizeTipUrl(l.kind, l.url));
+  if (broken) {
+    toast(NM.tipUrlProblem(broken.kind, broken.url) === "spoof" ? t("link.spoof") : t("link.notlink"));
+    buildLinks();           // surface the inline warning on the offending row
+    publishing = false;
+    return;
+  }
+  data.links = typed.map(l => ({ ...l, url: NM.safeUrl(NM.normalizeTipUrl(l.kind, l.url)) }));
 
   // tipping is the whole point — block publishing a page nobody can actually tip on
   if (!data.links.length) {

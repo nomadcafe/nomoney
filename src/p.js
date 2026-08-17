@@ -30,10 +30,16 @@ function render() {
   document.title = NM.pageTitle(data.name, bs.score);
 
   const links = data.links.map(l => {
-    // never show a brand the link doesn't actually go to (protects pages saved before
-    // the rule existed, or via a hand-crafted API call) — fall back to a generic button
+    // repair links stored before the "does this go anywhere" rule existed: an email typed
+    // into the URL box became https://name@gmail.com, which sends supporters to gmail's
+    // homepage. Normalizing at render fixes those for visitors right now, without waiting
+    // for an owner (who may no longer hold an edit token) to re-save. Values that can't be
+    // repaired are left alone rather than silently deleted from someone's page — /admin
+    // flags them instead.
     const k0 = NM.canonKind(l.kind);
-    const kind = NM.brandMismatch(k0, l.url) ? "custom" : k0;
+    const url = NM.normalizeTipUrl(k0, l.url) || l.url;
+    l = { ...l, url };
+    const kind = NM.brandMismatch(k0, url) ? "custom" : k0;
     const k = NM.PAYMENT_KINDS[kind] || NM.PAYMENT_KINDS.custom;
     const label = (lang() !== "en" && l[lang()]) ? l[lang()] : (l.label || NM.payLabel(kind));   // demos carry localized labels; user pages keep their own
     // these are visitor-clickable, user-submitted outbound links: nofollow+ugc so public

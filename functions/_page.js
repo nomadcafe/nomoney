@@ -1,6 +1,8 @@
 // Shared helpers for turning a stored page into a lightweight admin/index entry.
 // Used by save.js (maintain the recent index) and wall.js (rebuild it from KV).
 
+import { normalizeTipUrl } from "./_links.js";
+
 // An "empty" page is a registered handle that never got real content —
 // no story and no support links. The squatter signal for reclaiming.
 export function isEmptyPage(d) {
@@ -8,6 +10,16 @@ export function isEmptyPage(d) {
   const story = String(d.story || "").trim();
   const hasLinks = Array.isArray(d.links) && d.links.length > 0;
   return !(story || hasLinks);
+}
+
+// A page whose every tip button is dead (or that has none). Live data found 18% of
+// pages in this state — a username or an email typed into the URL box. The editor now
+// blocks it at publish, but pages saved before that rule still exist, so /admin needs
+// to be able to see and act on them.
+export function hasDeadLinks(d) {
+  const links = (d && Array.isArray(d.links)) ? d.links : [];
+  if (!links.length) return true;
+  return !links.some(l => l && normalizeTipUrl(l && l.kind, l && l.url));
 }
 
 // The compact record stored per page in the "pages:recent" index.
@@ -24,6 +36,7 @@ export function indexEntry(slug, d, m, msgs = 0) {
     createdAt: m.createdAt || null,
     updatedAt: m.updatedAt || null,
     empty: isEmptyPage(d),
+    dead: hasDeadLinks(d),
     msgs: Number(msgs) || 0,
   };
 }

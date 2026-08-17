@@ -115,6 +115,7 @@ function renderFeatured(featured) {
 function sortedFiltered() {
   let list = allRecent.slice();
   if ($("#onlyEmpty").checked) list = list.filter(p => p.empty);
+  if ($("#onlyDead").checked) list = list.filter(p => p.dead);
   const q = $("#searchBox").value.trim().toLowerCase();
   if (q) list = list.filter(p => (p.name || "").toLowerCase().includes(q) || (p.slug || "").toLowerCase().includes(q));
   const sort = $("#sortBy").value;
@@ -139,8 +140,9 @@ function renderSummary() {
   if (!n) { el.textContent = ""; return; }
   const empty = allRecent.filter(p => p.empty).length;
   const stale = allRecent.filter(p => { const d = daysSince(p.updatedAt); return d != null && d >= STALE_DAYS; }).length;
+  const dead = allRecent.filter(p => p.dead && !p.empty).length;
   const alive = allRecent.filter(p => (p.msgs || 0) > 0).length;
-  el.textContent = `${n} pages · ${alive} with messages · ${empty} empty · ${stale} dormant (${STALE_DAYS}d+) · ${onWall.size} on wall`;
+  el.textContent = `${n} pages · ${alive} with messages · ${dead} with dead tip links · ${empty} empty · ${stale} dormant (${STALE_DAYS}d+) · ${onWall.size} on wall`;
 }
 
 function renderRecent() {
@@ -160,6 +162,7 @@ function renderRecent() {
       ((p.o || 0) > 0 ? `<span class="admin-tag admin-tag-live" title="tip-link clicks · per visit">💸 ${p.o}${rate(p.o)}</span>` : "") +
       ((p.msgs || 0) > 0 ? `<span class="admin-tag admin-tag-live">💬 ${p.msgs}</span>` : "") +
       (p.empty ? `<span class="admin-tag admin-tag-warn">empty</span>` : "") +
+      (p.dead && !p.empty ? `<span class="admin-tag admin-tag-warn" title="every tip button on this page goes nowhere — a username or email was typed into the URL box">💀 dead link</span>` : "") +
       (stale ? `<span class="admin-tag">stale ${relTime(p.updatedAt)}</span>` : "");
     const meta = p.createdAt || p.updatedAt
       ? `created ${relTime(p.createdAt)} · edited ${relTime(p.updatedAt)}`
@@ -244,6 +247,7 @@ $("#addSlug").addEventListener("keydown", e => { if (e.key === "Enter") $("#addS
 $("#logout").onclick = () => { token = ""; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} $("#adminToken").value = ""; showTokenBox("Token forgotten"); };
 $("#sortBy").onchange = renderRecent;
 $("#onlyEmpty").onchange = renderRecent;
+$("#onlyDead").onchange = renderRecent;
 let searchT;
 $("#searchBox").oninput = () => { clearTimeout(searchT); searchT = setTimeout(renderRecent, 120); };
 $("#refresh").onclick = () => { toast("Refreshing…"); load(); };
