@@ -113,7 +113,7 @@ createServer(async (req, res) => {
     let body; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { return send(res, 400, '{"error":"bad json"}', { "content-type": "application/json" }); }
     const slug = String(body.slug || ""); if (!SLUG_RE.test(slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
     // batched { v,c,s,o } from the current client, or a legacy single-event string
-    const FIELDS = ["v", "c", "s", "o"], LEGACY = { view: "v", cta: "c" };
+    const FIELDS = ["v", "c", "s", "o", "p"], LEGACY = { view: "v", cta: "c" };
     const events = {};
     if (typeof body.ev === "string") { const f = LEGACY[body.ev]; if (f) events[f] = 1; }
     else if (body.ev && typeof body.ev === "object" && !Array.isArray(body.ev)) {
@@ -156,7 +156,7 @@ createServer(async (req, res) => {
       if (body.token !== "dev") return send(res, 403, '{"error":"forbidden (dev token: dev)"}', { "content-type": "application/json" });
       if (body.list) {
         let recent = []; try { recent = JSON.parse(KV.get("pages:recent") || "[]"); } catch {}
-        for (const r of recent) { let o = null; try { o = JSON.parse(KV.get("stat:" + r.slug) || "null"); } catch {} for (const f of ["v", "c", "s", "o"]) r[f] = +(o && o[f]) || 0; }
+        for (const r of recent) { let o = null; try { o = JSON.parse(KV.get("stat:" + r.slug) || "null"); } catch {} for (const f of ["v", "c", "s", "o", "p"]) r[f] = +(o && o[f]) || 0; }
         const creates = +KV.get("stat:creates") || 0;
         return send(res, 200, JSON.stringify({ featured: readList(), recent, creates }), { "content-type": "application/json" });
       }

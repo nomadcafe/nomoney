@@ -542,9 +542,29 @@ async function publish() {
   document.querySelector(".modal-live h3").textContent = editing ? t("modal.updated_h3") : t("modal.live_h3");
   $("#resultUrl").value = url;
   $("#openPage").href = url;
+  shareTargetSlug = result.slug;
   NM.renderShareRow($("#shareRow"), url, data);
   $("#modal").classList.add("open");
 }
+
+/* ---------- did the creator actually share it? ----------
+   The gap the live data exposed: ~3 of every 4 published pages never reached a
+   stranger. Visitor-side metrics can't see that — by then the page already failed.
+   So record, once per page, whether its author pressed share/copy/download in the
+   publish modal. This is the one signal deliberately attributed to the owner. */
+let sharedSlug = null;                   // slug we've already reported a share for
+let shareTargetSlug = null;              // page the open modal belongs to (publish, or a re-share)
+function markPublishShare(slug) {
+  if (!slug || sharedSlug === slug) return;
+  sharedSlug = slug;
+  try {
+    const body = JSON.stringify({ slug, ev: { p: 1 } });
+    if (navigator.sendBeacon) navigator.sendBeacon(base + "api/hit", new Blob([body], { type: "application/json" }));
+    else fetch(base + "api/hit", { method: "POST", headers: { "content-type": "application/json" }, body, keepalive: true }).catch(() => {});
+  } catch (e) {}
+}
+// every way out of the modal that counts as "I pushed this out into the world"
+$("#shareRow").addEventListener("click", (e) => { if (e.target.closest("a,button")) markPublishShare(shareTargetSlug); });
 
 // switch the editor into "update this page" mode (after creating, or when opened via an edit link)
 function enterEditMode(slug, token) {
@@ -639,7 +659,7 @@ function flashCopied(btn) {
   btn._t = setTimeout(() => { btn.textContent = btn._label; btn.classList.remove("copied"); btn._t = null; }, 1400);
 }
 $("#copyResult").onclick = async () => {
-  try { await navigator.clipboard.writeText($("#resultUrl").value); toast(t("toast.link_copied")); flashCopied($("#copyResult")); }
+  try { await navigator.clipboard.writeText($("#resultUrl").value); markPublishShare(shareTargetSlug); toast(t("toast.link_copied")); flashCopied($("#copyResult")); }
   catch { $("#resultUrl").select(); toast(t("toast.copy_manual")); }
 };
 $("#copyEdit").onclick = async () => {
@@ -647,6 +667,7 @@ $("#copyEdit").onclick = async () => {
   catch { $("#editUrl").select(); toast(t("toast.copy_manual")); }
 };
 $("#downloadBtn").onclick = () => {
+  markPublishShare(shareTargetSlug);
   const a = document.createElement("a");
   a.download = `no-money-${gather().handle}.png`;
   a.href = $("#shareCanvas").toDataURL("image/png");
@@ -673,13 +694,37 @@ function showResumeBar() {
   const pick = pages.find(p => p.slug === last) || pages[0];
   const extra = pages.length > 1 ? ` (+${pages.length - 1})` : "";
   const bar = $("#resumeBar");
+  // Share comes first and is the primary action. A creator returning here already has a
+  // page; the thing most of them never did is send it to anyone (live data: ~3 of 4 pages
+  // never reached a stranger). Before this the bar offered only "edit" and "start a new
+  // one" — there was no path back to the share sheet at all once the modal was closed.
   bar.innerHTML =
     `<span class="resume-txt">💸 ${t("resume.has")} <b>no.money/${esc(pick.slug)}</b>${extra}</span>` +
-    `<span class="resume-actions"><button class="btn btn-primary" id="resumeEdit">${t("resume.edit")}</button>` +
+    `<span class="resume-actions"><button class="btn btn-primary" id="resumeShare">${t("resume.share")}</button>` +
+    `<button class="btn btn-ghost" id="resumeEdit">${t("resume.edit")}</button>` +
     `<button class="btn btn-ghost" id="resumeNew">${t("resume.new")}</button></span>`;
   bar.style.display = "";
+  $("#resumeShare").onclick = () => openShareFor(pick.slug);
   $("#resumeEdit").onclick = () => { bar.style.display = "none"; loadForEdit(pick.slug, pick.token); };
   $("#resumeNew").onclick = () => { bar.style.display = "none"; };
+}
+
+// Re-open the share sheet for an already-published page, without entering edit mode.
+// Pulls the page's real stored data so the image and caption match what visitors see.
+async function openShareFor(slug) {
+  let d = null;
+  try { const res = await fetch(base + "api/get?slug=" + encodeURIComponent(slug)); if (res.ok) d = (await res.json()).data; } catch (e) {}
+  if (!d) { toast(t("toast.load_fail")); return; }
+  const url = location.origin + base + slug;
+  NM.drawShareImage($("#shareCanvas"), d);
+  NM.renderShareRow($("#shareRow"), url, d);
+  $("#resultUrl").value = url;
+  $("#openPage").href = url;
+  sharedSlug = null;                       // a fresh share of this page should still count
+  shareTargetSlug = slug;                  // ...and be attributed to it, not to editingSlug
+  $(".live-badge").textContent = t("modal.badge");
+  document.querySelector(".modal-live h3").textContent = t("modal.live_h3");
+  $("#modal").classList.add("open");
 }
 
 // init: ?edit=<slug> loads a page for editing; else ?status= themed fresh start; else restore draft

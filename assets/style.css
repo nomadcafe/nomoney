@@ -497,6 +497,12 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .result-url input { flex: 1; min-width: 0; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; font-family: var(--mono); font-size: 14px; color: var(--ink); }
 .result-url .btn { flex: 0 0 auto; }
 .modal-live .share-row { justify-content: center; }
+/* the publish modal's share row is the product's most important click — give it the
+   weight that used to sit on "Copy link", which is the action least likely to end in
+   anyone actually seeing the page */
+.share-row-lead .share-btn { font-size: 15px; padding: 12px 18px; border-color: var(--green-dim); color: var(--green-text); background: rgba(0,194,90,0.08); font-weight: 700; }
+.share-row-lead .share-btn:hover { background: rgba(0,194,90,0.16); border-color: var(--green-text); }
+.modal-live .share-label { color: var(--ink-dim); font-size: 12.5px; }
 .resume-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin: 0 0 26px; padding: 12px 10px 12px 16px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
 .resume-bar .resume-txt { font-size: 14px; color: var(--ink-dim); }
 .resume-bar .resume-txt b { color: var(--ink); font-family: var(--mono); }

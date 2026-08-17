@@ -27,7 +27,7 @@ async function readList(env) {
 // Fold the per-page viral-loop counters (stat:<slug> -> {v,c,s,o}) onto each index
 // entry so /admin can show them and sum the funnel. Reads are cheap on KV (the
 // scarce resource is writes); we parallelize and only read indexed (real) pages.
-const STAT_FIELDS = ["v", "c", "s", "o"];   // visits · make-mine · share acts · tip clicks
+const STAT_FIELDS = ["v", "c", "s", "o", "p"];   // visits · make-mine · share acts · tip clicks · creator shared
 async function attachStats(env, recent) {
   await Promise.all(recent.map(async (r) => {
     if (!r || !r.slug) return;

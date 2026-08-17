@@ -11,6 +11,12 @@
 //                              "would you send this to someone?" moment
 //   o = tip-link clicks       (someone actually heading for the payment page — the
 //                              only signal that a tipping page produces tips)
+//   p = creator shared it      (the author pushed it out from the publish modal). The
+//                              ONE exception to "owners are excluded": live data showed
+//                              ~3 of every 4 pages never reached a stranger, so the
+//                              question that matters most is not how visitors behave —
+//                              it's whether the creator ever pressed share at all.
+//                              Per-slug like the rest, so no hot key.
 // Creates (the loop's output) are counted separately in save.js (stat:creates).
 //
 // KV layout:  "stat:"+slug -> JSON {v,c,s,o}
@@ -32,7 +38,7 @@
 // our write budget to re-count what the dashboard shows would be waste.
 
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
-const FIELDS = ["v", "c", "s", "o"];
+const FIELDS = ["v", "c", "s", "o", "p"];
 const LEGACY = { view: "v", cta: "c" };   // pre-batch clients still in someone's open tab
 const MAX_PER_FIELD = 5;                  // a session can't plausibly report more; caps injection
 

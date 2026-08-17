@@ -120,18 +120,23 @@ Now I'm surviving on instant noodles. Send help (or seasoning).</textarea>
   <div class="modal modal-live">
     <button class="modal-x" id="closeModal" aria-label="Close">×</button>
     <div class="live-badge" data-i18n="modal.badge">💸 You're officially broke</div>
-    <h3 data-i18n="modal.live_h3">Your page is live 🎉</h3>
+    <h3 data-i18n="modal.live_h3">Your page is live. Nobody has seen it yet.</h3>
+    <canvas id="shareCanvas"></canvas>
+    <!-- Sharing is the whole product and it used to be styled as an afterthought under a
+         primary "Copy link" button — copying a link is the action least likely to end in
+         anyone seeing the page. Share goes first and loudest now; copy is the fallback. -->
+    <div class="share-label" data-i18n="modal.share_label">Post it somewhere — the image does the begging</div>
+    <div class="share-row share-row-lead" id="shareRow"></div>
     <div class="result-url">
       <input type="text" id="resultUrl" readonly aria-label="Your page link" />
-      <button class="btn btn-primary" id="copyResult" data-i18n="modal.copy">Copy link</button>
+      <button class="btn btn-ghost" id="copyResult" data-i18n="modal.copy">Copy link</button>
     </div>
-    <canvas id="shareCanvas"></canvas>
-    <div class="share-label" data-i18n="modal.share_label">Share it — the image does the begging</div>
-    <div class="share-row" id="shareRow"></div>
     <div class="modal-actions">
       <a class="btn btn-ghost btn-block" id="openPage" target="_blank" rel="noopener" data-i18n="modal.open">Open my page ↗</a>
       <button class="btn btn-ghost btn-block" id="downloadBtn" data-i18n="modal.download">⬇ Download image</button>
     </div>
+    <!-- stays open and last: it's the only path back to this page, so it must never be
+         behind a click — but the share block above it now carries the visual weight. -->
     <div class="edit-save">
       <div class="edit-save-head">🔒 <strong data-i18n="modal.edit_title">Save your private edit link</strong></div>
       <p class="edit-save-warn" data-i18n="modal.edit_warn">This is the only way to edit this page later — there are no accounts. Clearing your browser data loses access. Anyone with the link can edit, so keep it private.</p>

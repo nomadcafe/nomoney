@@ -69,15 +69,19 @@ async function load() {
 function renderFunnel() {
   const sum = f => allRecent.reduce((n, p) => n + (p[f] || 0), 0);
   const v = sum("v"), c = sum("c"), sh = sum("s"), o = sum("o");
+  // The step before every other step: did the author ever push the page out? Live data
+  // said ~3 of 4 pages never reached a stranger, which no visitor-side metric can see.
+  const pushed = allRecent.filter(p => (p.p || 0) > 0).length;
   const box = $("#funnel");
-  if (!v && !c && !sh && !o && !creates) { box.style.display = "none"; return; }
+  if (!v && !c && !sh && !o && !pushed && !creates) { box.style.display = "none"; return; }
   box.style.display = "";
   // momentum: pages created in the last 7 days (legacy pages without a timestamp are skipped)
   const new7 = allRecent.filter(p => { const d = daysSince(p.createdAt); return d != null && d < 7; }).length;
   const chip = (n, label, hot) => `<span class="funnel-chip${hot ? " funnel-chip-hot" : ""}"><b>${n.toLocaleString()}</b><span>${label}</span></span>`;
   $("#funnelRow").innerHTML =
+    chip(pushed, `creator shared · ${pct(pushed, allRecent.length)}%`, true) +
     chip(v, "visits") +
-    chip(sh, `shared · ${pct(sh, v)}%`, true) +
+    chip(sh, `visitors shared · ${pct(sh, v)}%`) +
     chip(c, `“Make mine” · ${pct(c, v)}%`) +
     chip(creates, "pages created") +
     chip(o, `tip clicks · ${pct(o, v)}%`) +
@@ -89,7 +93,7 @@ function renderFunnel() {
     ? `🔥 Most shared: <b>${esc(top.name || top.slug)}</b> <span class="admin-muted">no.money/${esc(top.slug)}</span> — ${top.v} visits · ${pct(top.s || 0, top.v)}% shared · ${pct(top.c || 0, top.v)}% make-mine`
     : "";
   $("#funnelHint").textContent =
-    "Share rate is the metric — it answers “is this page worth sending on?”. Make-mine is the loop closing; tip clicks say whether tipping pages actually get tipped. " +
+    "“Creator shared” is the top of the funnel and the one that was broken: a page nobody sends anywhere cannot convert anyone. Then: share rate is the metric — it answers “is this page worth sending on?”. Make-mine is the loop closing; tip clicks say whether tipping pages actually get tipped. " +
     "All per visit, once per session, directional not exact. Landing-page traffic isn't here — read it off Cloudflare's own request analytics.";
 }
 
