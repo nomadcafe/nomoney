@@ -765,9 +765,31 @@ async function openShareFor(slug) {
   else showResumeBar();                                  // surface an existing page to keep editing
 })();
 
+// phones: the preview starts as a slim sticky strip (see .preview-col.collapsed); tap the
+// strip or the button to see the whole card. Desktop never shows the toggle.
+function syncPreviewToggle() {
+  const open = !$("#previewCol").classList.contains("collapsed");
+  const b = $("#previewToggle");
+  b.textContent = t(open ? "create.preview_hide" : "create.preview_show");
+  b.setAttribute("aria-expanded", String(open));
+}
+function setPreviewOpen(open) {
+  $("#previewCol").classList.toggle("collapsed", !open);
+  syncPreviewToggle();
+  if (!open) $("#previewCol").scrollIntoView({ block: "nearest" });
+}
+$("#previewToggle").onclick = (e) => { e.stopPropagation(); setPreviewOpen($("#previewCol").classList.contains("collapsed")); };
+$("#preview").addEventListener("click", (e) => {
+  if (!$("#previewCol").classList.contains("collapsed") || !matchMedia("(max-width: 820px)").matches) return;
+  e.preventDefault();          // the strip is a toggle, not a set of live links
+  setPreviewOpen(true);
+});
+syncPreviewToggle();
+
 // re-render dynamic content on language switch (the picker itself is wired in i18n.js)
 window.addEventListener("langchange", () => {
   buildChips(); buildEmoji(); buildLinks(); render(); syncAvatarUI();
+  syncPreviewToggle();   // [data-i18n] reset it to the "show" label
   applyEditModeText();   // setLang re-applied [data-i18n], which would reset edit-mode header/button
   document.title = t("title.create");
   if ($("#resumeBar").style.display !== "none") showResumeBar();   // refresh banner text in new language
