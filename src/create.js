@@ -753,7 +753,15 @@ async function openShareFor(slug) {
   window.I18N.apply();                                   // translate static [data-i18n] text
   document.title = t("title.create");
   buildChips(); buildEmoji(); buildLinks(); render(); syncAvatarUI();    // render defaults/draft first (no blank flash)
-  if (willEdit) loadForEdit(editSlug, qp.get("t")); // then override async (clears loading-edit when done)
+  const urlToken = qp.get("t");
+  if (urlToken) {
+    // the edit token is the page's only credential: keep it on this device, then get it
+    // out of the address bar so it doesn't sit in history, screenshots or screen shares
+    try { localStorage.setItem("nm:edit:" + editSlug, urlToken); } catch (e) {}
+    qp.delete("t");
+    history.replaceState(null, "", location.pathname + (qp.toString() ? "?" + qp : "") + location.hash);
+  }
+  if (willEdit) loadForEdit(editSlug, urlToken); // then override async (clears loading-edit when done)
   else showResumeBar();                                  // surface an existing page to keep editing
 })();
 

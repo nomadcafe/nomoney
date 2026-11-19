@@ -5,6 +5,8 @@ import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { RESERVED } from "./functions/_reserved.js";
 import { moderate } from "./functions/_moderation.js";
+import { cleanPage, cleanMeta } from "./functions/_schema.js";
+import { sanitizeLinks } from "./functions/_links.js";
 
 const ROOT = process.cwd();
 const PORT = 8766;
@@ -39,8 +41,9 @@ createServer(async (req, res) => {
   if (path === "/api/save" && req.method === "POST") {
     const chunks = []; for await (const c of req) chunks.push(c);
     let body; try { body = JSON.parse(Buffer.concat(chunks).toString()); } catch { return send(res, 400, '{"error":"bad json"}', { "content-type": "application/json" }); }
-    const data = body && body.data;
-    if (!data || typeof data !== "object" || Array.isArray(data)) return send(res, 400, '{"error":"no data"}', { "content-type": "application/json" });
+    if (!body || !body.data || typeof body.data !== "object" || Array.isArray(body.data)) return send(res, 400, '{"error":"no data"}', { "content-type": "application/json" });
+    const data = cleanPage(body.data);                 // same whitelist as prod
+    data.links = sanitizeLinks(data.links);
     let slug, token;
     if (body.slug && body.editToken) {
       if (!SLUG_RE.test(body.slug)) return send(res, 400, '{"error":"bad slug"}', { "content-type": "application/json" });
@@ -54,18 +57,17 @@ createServer(async (req, res) => {
       if (taken(slug)) { for (let i = 0; i < 8; i++) { slug = `${root}-${suffix(i < 4 ? 3 : 5)}`; if (!taken(slug)) break; } }
       token = newToken();
     }
-    const violation = moderate(data);
+    const meta = cleanMeta(body.meta);
+    const violation = moderate(data) || moderate({ story: [meta.title, meta.desc].filter(Boolean).join("\n") });
     if (violation) return send(res, 422, JSON.stringify({ error: "blocked", reason: violation }), { "content-type": "application/json" });
     data.handle = slug; // keep the displayed handle == the real URL
     const AV = "data:image/jpeg;base64,";
-    delete data.av;                                     // server-owned version flag, like prod
     const prevAv = (() => { try { return (JSON.parse(KV.get(slug) || "{}").d || {}).av || ""; } catch { return ""; } })();
     if (typeof body.avatar === "string" && body.avatar.startsWith(AV)) {
       KV.set("avatar:" + slug, Buffer.from(body.avatar.slice(AV.length), "base64"));
       data.av = suffix(6);
     } else if (body.avatar === null) { KV.delete("avatar:" + slug); }
     else if (prevAv) data.av = prevAv;
-    const meta = (body.meta && typeof body.meta === "object") ? body.meta : {};
     const prevMeta = (() => { try { return JSON.parse(KV.get(slug) || "{}").m || {}; } catch { return {}; } })();
     meta.createdAt = prevMeta.createdAt || new Date().toISOString();
     meta.updatedAt = new Date().toISOString();

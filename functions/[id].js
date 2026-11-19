@@ -66,6 +66,13 @@ export async function onRequestGet(context) {
   html = html.replace("</head>", inject + "</head>");
 
   return new Response(html, {
-    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "public, max-age=300" },
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "public, max-age=300",
+      // _headers only covers static assets, not Function responses — set them here too
+      "x-content-type-options": "nosniff",
+      "x-frame-options": "DENY",
+      "referrer-policy": "strict-origin-when-cross-origin",
+    },
   });
 }

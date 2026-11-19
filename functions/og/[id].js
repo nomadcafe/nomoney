@@ -10,6 +10,7 @@ export async function onRequestGet({ params, env }) {
   return new Response(png, {
     headers: {
       "content-type": "image/png",
+      "x-content-type-options": "nosniff",
       "cache-control": "public, max-age=31536000, immutable",
     },
   });

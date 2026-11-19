@@ -90,7 +90,7 @@ function renderWall() {
     a.href = "/" + c.slug;
     setAccent(a, st.accent);
     // photo if the page has one, else the broke-status emoji (same fallback as the card)
-    const emoji = c.emoji || st.emoji;
+    const emoji = esc(c.emoji || st.emoji);   // user-supplied — this went into innerHTML raw once (stored XSS)
     const avatar = c.av
       ? `${emoji}<img src="/av/${encodeURIComponent(c.slug)}?v=${encodeURIComponent(c.av)}" alt="" onerror="this.remove()" />`
       : emoji;

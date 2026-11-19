@@ -5,6 +5,7 @@
 // KV: "msg:"+slug -> JSON array (newest first). Page must exist.
 
 import { patchIndexEntry } from "../_page.js";
+import { moderate } from "../_moderation.js";
 
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
 const MAX_TEXT = 140;
@@ -56,7 +57,7 @@ export async function onRequestPost({ request, env }) {
   // owner deletes a message (needs the page's edit token)
   if (body.del != null) {
     let page; try { page = JSON.parse(pageRaw); } catch { page = null; }
-    if (!page || page.t !== body.editToken) return json({ error: "forbidden" }, 403);
+    if (!page || !page.t || page.t !== body.editToken) return json({ error: "forbidden" }, 403);
     arr = arr.filter(m => m.id !== String(body.del));
     await env.PAGES.put(key, JSON.stringify(arr));
     await patchIndexEntry(env, slug, { msgs: arr.length });   // keep admin count live
@@ -68,6 +69,9 @@ export async function onRequestPost({ request, env }) {
   if (!text) return json({ error: "empty" }, 400);
   if (/https?:\/\/|www\./i.test(text)) return json({ error: "no links allowed" }, 400); // anti-spam
   const name = String(body.name || "").trim().slice(0, MAX_NAME) || "anon";
+  // same content rules as the page itself — a busy wall is the cheapest billboard
+  // for tipster/recovery-scam spam, and links are already banned so text is all it has
+  if (moderate({ name, story: text })) return json({ error: "blocked" }, 422);
 
   // don't let the same line be posted twice — kills the cheapest flood (repeat-send)
   // and the double-submit from an impatient tap, at zero extra cost (arr is in hand)

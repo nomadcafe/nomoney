@@ -10,6 +10,7 @@
 //   (manage the list with `wrangler kv key put wall:featured '[...]'` instead).
 
 import { indexEntry, deletePage } from "../_page.js";
+import { cleanEmoji } from "../_schema.js";
 
 const KEY = "wall:featured";
 const SLUG_RE = /^[a-z0-9-]{2,40}$/;
@@ -56,7 +57,7 @@ export async function onRequestGet({ env }) {
       name: d.name || "Someone broke",
       handle: d.handle || slug,
       status: d.status || "ramen",
-      emoji: typeof d.emoji === "string" ? d.emoji : "",
+      emoji: cleanEmoji(d.emoji),           // pages saved before _schema.js may hold anything
       av: typeof d.av === "string" ? d.av : "",
       link: first ? { kind: first.kind || "custom", label: first.label || "" } : null,
     };

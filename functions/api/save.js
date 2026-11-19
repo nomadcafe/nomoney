@@ -8,6 +8,7 @@ import { RESERVED } from "../_reserved.js";
 import { indexEntry } from "../_page.js";
 import { sanitizeLinks } from "../_links.js";
 import { moderate } from "../_moderation.js";
+import { cleanPage, cleanMeta } from "../_schema.js";
 
 const SUFFIX_CHARS = "abcdefghijkmnpqrstuvwxyz23456789"; // no 0/o/1/l ambiguity
 const TOKEN_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -53,8 +54,10 @@ export async function onRequestPost({ request, env }) {
   let body;
   try { body = await request.json(); } catch { return json({ error: "bad json" }, 400); }
 
-  const data = body && body.data;
-  if (!data || typeof data !== "object" || Array.isArray(data)) return json({ error: "no data" }, 400);
+  const rawData = body && body.data;
+  if (!rawData || typeof rawData !== "object" || Array.isArray(rawData)) return json({ error: "no data" }, 400);
+  // whitelist + cap every field — never store the client's object as-is (see _schema.js)
+  const data = cleanPage(rawData);
 
   // optional share image (PNG data URL produced by the browser canvas)
   let png = null;
@@ -126,14 +129,15 @@ export async function onRequestPost({ request, env }) {
 
   // content rules. Runs on edits too — otherwise you publish something clean and swap
   // the story afterwards. Checked AFTER sanitizeLinks so it sees the final buttons.
-  const violation = moderate(data);
+  // the social-preview text is checked too: it's what strangers see in the share card
+  const meta = cleanMeta(body.meta);
+  const violation = moderate(data) || moderate({ story: [meta.title, meta.desc].filter(Boolean).join("\n") });
   if (violation) return json({ error: "blocked", reason: violation }, 422);
 
   // avatar photo — image bytes can't live in the 8 KB page JSON, so they're stored
   // out-of-band at "avatar:"+slug (like the share image at "img:"+slug) and served
   // by /av/:slug. data.av is a server-owned version flag (a cache-buster for the
   // immutable /av response); never trust a client-supplied one.
-  delete data.av;
   const AV_PREFIX = "data:image/jpeg;base64,";
   let avatarBytes = null, removeAvatar = false;
   if (typeof body.avatar === "string" && body.avatar.startsWith(AV_PREFIX)) {
@@ -154,7 +158,6 @@ export async function onRequestPost({ request, env }) {
   // timestamps are server-owned (never trusted from the client). createdAt is set
   // once and preserved across edits; updatedAt moves every save.
   const now = new Date().toISOString();
-  const meta = (body.meta && typeof body.meta === "object") ? body.meta : {};
   meta.createdAt = (prevMeta && prevMeta.createdAt) || now;
   meta.updatedAt = now;
 
