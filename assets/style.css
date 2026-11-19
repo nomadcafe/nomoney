@@ -74,7 +74,7 @@ a { color: inherit; text-decoration: none; }
 .nav-links { display: flex; align-items: center; gap: 26px; }
 .nav-links a:not(.btn) { color: var(--ink-dim); font-size: 14px; font-weight: 500; transition: color .15s ease; }
 .nav-links a:not(.btn):hover { color: var(--ink); }
-.lang-toggle { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 13px; color: var(--ink-dim); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; transition: color .15s ease, border-color .15s ease; }
+.lang-toggle { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 13px; color: var(--ink-dim); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; transition: color .15s ease, border-color .15s ease; }
 .lang-toggle:hover { color: var(--ink); border-color: var(--ink-faint); }
 .lang-picker.open .lang-toggle { color: var(--ink); border-color: var(--ink-faint); }
 .lang-toggle::after { content: "▾"; font-size: 10px; line-height: 1; opacity: .55; }
@@ -346,10 +346,10 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 .broke-score .bs-num span { font-size: 15px; color: var(--ink-faint); font-weight: 500; }
 .broke-score .bs-meter { height: 6px; background: var(--bg); border-radius: 99px; overflow: hidden; margin: 10px 0 6px; }
 .broke-score .bs-meter > i { display: block; height: 100%; background: var(--accent, var(--green)); border-radius: 99px; }
-.broke-score .bs-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; border-top: 1px solid var(--line); }
+.broke-score .bs-row { display: flex; justify-content: space-between; gap: 14px; font-size: 13px; padding: 4px 0; border-top: 1px solid var(--line); }
 .broke-score .bs-row:first-of-type { border-top: none; margin-top: 8px; padding-top: 10px; }
-.broke-score .bs-row .k { color: var(--ink-faint); }
-.broke-score .bs-row .v { color: var(--ink); font-weight: 600; }
+.broke-score .bs-row .k { color: var(--ink-faint); white-space: nowrap; }
+.broke-score .bs-row .v { color: var(--ink); font-weight: 600; text-align: right; }
 
 .msg-wall { text-align: left; margin-bottom: 8px; }
 .msg-wall h4 { font-size: 13px; color: var(--ink-faint); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
@@ -578,4 +578,10 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
   .nav-links { gap: 8px; }
   .nav-links .btn-primary { padding: 8px 13px; font-size: 13px; }
   .hero { padding: 40px 0 48px; }
+  /* stacked hero buttons at one width, not two mismatched pills */
+  .hero-cta { flex-direction: column; align-items: stretch; max-width: 320px; margin: 0 auto; }
+  /* the recruit box: text gets the full row, button goes full-width underneath */
+  .remix-cta { flex-wrap: wrap; }
+  .remix-cta .remix-text { flex: 1 1 0; min-width: 0; }
+  .remix-cta .btn { flex: 1 1 100%; }
 }
