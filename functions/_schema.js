@@ -7,6 +7,8 @@
 
 // keep in sync with STATUS_ORDER in assets/core.js
 export const STATUS_KEYS = ["ramen", "rent", "laidoff", "crypto", "student", "startup", "freelance", "pet"];
+// keep in sync with LOOKS in assets/core.js. Absent = follow the status' default look.
+export const THEME_KEYS = ["clean", "tint", "gradient", "dark", "mono", "brutal"];
 
 const MAX_NAME = 40;    // mirrors the editor's maxlength
 const MAX_STORY = 240;
@@ -35,6 +37,7 @@ export function cleanPage(d) {
   };
   const emoji = cleanEmoji(d.emoji);
   if (emoji) out.emoji = emoji;
+  if (THEME_KEYS.includes(d.theme)) out.theme = d.theme;
   return out;
 }
 

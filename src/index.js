@@ -52,7 +52,7 @@ function renderDemos() {
       || (lang() === "en" ? (fl ? (fl.label || fk.label) : NM.payLabel("ramen"))
                           : (fl ? NM.payLabel(fl.kind) : NM.payLabel("ramen")));
     const a = document.createElement("a");
-    a.className = "page-card demo-card theme-" + (st.theme || "clean");
+    a.className = "page-card demo-card theme-" + NM.lookOf(d);
     a.href = "p.html?demo=" + key;
     setAccent(a, st.accent);
     a.innerHTML = `
@@ -86,7 +86,7 @@ function renderWall() {
       ? (c.link && c.link.label ? c.link.label : (c.link ? NM.payLabel(c.link.kind) : NM.payLabel("ramen")))
       : (c.link && c.link.kind ? NM.payLabel(c.link.kind) : NM.payLabel("ramen"));
     const a = document.createElement("a");
-    a.className = "page-card demo-card theme-" + (st.theme || "clean");
+    a.className = "page-card demo-card theme-" + NM.lookOf({ status: sp, theme: c.theme });
     a.href = "/" + c.slug;
     setAccent(a, st.accent);
     // photo if the page has one, else the broke-status emoji (same fallback as the card)

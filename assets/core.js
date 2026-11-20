@@ -73,7 +73,7 @@ const STATUSES = {
     jamsgs: [["未来の君がきっと恩を返す。", "anon"], ["期末を制覇しろ、破産の伝説。", "prof_no"]],
   },
   startup: {
-    label: "Startup Broke", emoji: "🚀", accent: "#00d563", base: 76, theme: "gradient",
+    label: "Startup Broke", emoji: "🚀", accent: "#00d563", base: 76, theme: "brutal",
     tagline: "Pre-revenue, pre-funding, pre-lunch.",
     story: "We're pre-revenue, pre-funding, and pre-lunch.\nRunway is short. Vibes are immaculate.\nHelp us reach ramen profitability.",
     risk: "Will pivot before paying themselves",
@@ -354,6 +354,16 @@ function someone() { return lx().someoneCard; }
 /* localized document title for a page (name + broke score) */
 function pageTitle(name, score) { return lx().title(name, score); }
 
+/* ---- looks (bio-link style templates) ----
+   A status only supplies the DEFAULT look; data.theme is the creator's own pick and wins.
+   Keep in sync with THEME_KEYS in functions/_schema.js (the server's whitelist). */
+const LOOKS = ["clean", "tint", "gradient", "dark", "mono", "brutal"];
+function lookOf(data) {
+  if (data && LOOKS.includes(data.theme)) return data.theme;
+  const st = STATUSES[data && data.status] || STATUSES.ramen;
+  return st.theme || "clean";
+}
+
 /* a funny, ready-to-post caption built from the page data */
 function shareText(data) {
   const st = locStatus(STATUSES[data.status] || STATUSES.ramen);
@@ -497,4 +507,4 @@ function mixHex(a, b, t) {
 }
 
 /* expose */
-window.NM = { STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, payPrefix, splitHandle, joinHandle, freeFormHost, brokeScore, safeUrl, brandMismatch, brandHostFor, normalizeTipUrl, tipUrlProblem, moderate, drawShareImage, shareText, shareIntents, renderShareRow, pageTitle, someone };
+window.NM = { LOOKS, lookOf, STATUSES, STATUS_ORDER, DEMOS, PAYMENT_KINDS, locStatus, payLabel, canonKind, payPrefix, splitHandle, joinHandle, freeFormHost, brokeScore, safeUrl, brandMismatch, brandHostFor, normalizeTipUrl, tipUrlProblem, moderate, drawShareImage, shareText, shareIntents, renderShareRow, pageTitle, someone };

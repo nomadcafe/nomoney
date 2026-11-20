@@ -187,6 +187,31 @@ function buildChips() {
     };
     c.appendChild(b);
   });
+  buildLooks();   // every path that rebuilds the status chips (init, Surprise, edit-load, language) needs these too
+}
+
+// "" = follow the status' default look; set only once the creator picks one
+let look = "";
+function buildLooks() {
+  const c = $("#looks");
+  c.innerHTML = "";
+  NM.LOOKS.forEach(k => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "look-chip";
+    b.dataset.look = k;
+    // the swatch is a tiny page in that look — it picks up the current status accent
+    b.innerHTML = `<span class="look-swatch look-${k}"><span class="sw-card theme-${k}"><i></i><b></b></span></span><span class="look-name">${t("look." + k)}</span>`;
+    b.onclick = () => { look = k; render(); };
+    c.appendChild(b);
+  });
+}
+function syncLooks(current) {
+  document.querySelectorAll(".look-chip").forEach(b => {
+    const on = b.dataset.look === current;
+    b.classList.toggle("on", on);
+    b.setAttribute("aria-pressed", String(on));
+  });
 }
 
 let links = [{ kind: "ramen", url: "" }];
@@ -295,6 +320,7 @@ function gather() {
     handle,
     status,
     ...(emoji ? { emoji } : {}),
+    ...(look ? { theme: look } : {}),
     story: $("#f-story").value.trim(),
     links: links.map(l => {
       const label = (l.label || "").trim();
@@ -330,7 +356,10 @@ function render() {
     return host ? a + `<p class="link-host">→ ${esc(host)}</p>` : a;
   }).join("");
 
-  $("#preview").className = "page-card theme-" + (st.theme || "clean");
+  const lk = NM.lookOf(data);
+  $("#preview").className = "page-card theme-" + lk;
+  $("#previewStage").className = "preview-stage look-" + lk;
+  syncLooks(lk);
   const avatar = avatarSrc() ? `<img src="${esc(avatarSrc())}" alt="" />` : esc(data.emoji || st.emoji);
   $("#preview").innerHTML = `
     <div class="avatar">${avatar}</div>
@@ -360,7 +389,7 @@ function writeDraft() {
   if (editingSlug) return;
   try {
     localStorage.setItem("nm:draft", JSON.stringify({
-      name: $("#f-name").value, handle: $("#f-handle").value, status, emoji,
+      name: $("#f-name").value, handle: $("#f-handle").value, status, emoji, look,
       story: $("#f-story").value,
       links, handleTouched,
       avatar: avatarData,   // a freshly picked photo survives a refresh (small JPEG data URL)
@@ -379,6 +408,7 @@ function restoreDraft() {
     if (d.story != null) $("#f-story").value = d.story;
     if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
     if (typeof d.emoji === "string") emoji = d.emoji;
+    if (NM.LOOKS.includes(d.look)) look = d.look;
     if (typeof d.avatar === "string" && d.avatar.startsWith("data:image/")) avatarData = d.avatar;
     if (Array.isArray(d.links) && d.links.length) {
       links = d.links.map(l => ({ kind: NM.canonKind(l.kind), url: l.url || "", ...(l.label ? { label: l.label } : {}) }));
@@ -650,6 +680,7 @@ async function loadForEdit(slug, t2) {
   $("#f-story").value = d.story || "";
   if (Object.prototype.hasOwnProperty.call(NM.STATUSES, d.status)) status = d.status;
   emoji = typeof d.emoji === "string" ? d.emoji : "";
+  look = NM.LOOKS.includes(d.theme) ? d.theme : "";
   avatarData = null; avatarRemoved = false;
   avatarExisting = d.av ? ("/av/" + slug + "?v=" + encodeURIComponent(d.av)) : "";
   if (Array.isArray(d.links) && d.links.length) links = d.links.map(l => ({ kind: NM.canonKind(l.kind), url: l.url || "", ...(l.label ? { label: l.label } : {}) }));

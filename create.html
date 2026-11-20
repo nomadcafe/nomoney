@@ -78,6 +78,11 @@
         <label data-i18n="create.status_q">What kind of broke are you?</label>
         <div class="status-chips" id="chips"></div>
       </div>
+      <div class="field">
+        <!-- bio-link style: the creator picks the look. Until they do, it follows the status. -->
+        <label data-i18n="create.look_q">Pick a look</label>
+        <div class="look-chips" id="looks" role="group"></div>
+      </div>
 
       <div class="field">
         <label for="f-story" data-i18n="create.story">Your sob story</label>
@@ -110,7 +115,8 @@
     <!-- preview -->
     <div class="preview-col collapsed" id="previewCol">
       <div class="preview-label" data-i18n="create.preview_label">Live preview</div>
-      <div class="page-card" id="preview"></div>
+      <!-- the stage paints the look's page background, so the preview shows the whole page -->
+      <div class="preview-stage" id="previewStage"><div class="page-card" id="preview"></div></div>
       <!-- phones only: the full card used to fill the whole first screen, so people saw a
            finished-looking page and never reached the form. Collapsed by default there. -->
       <button type="button" class="preview-toggle" id="previewToggle" aria-controls="preview" aria-expanded="false" data-i18n="create.preview_show">Full preview ▾</button>

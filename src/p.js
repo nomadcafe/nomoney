@@ -52,7 +52,10 @@ function render() {
     return host ? a + `<p class="link-host">→ ${esc(host)}</p>` : a;
   }).join("");
 
-  document.getElementById("card").className = "page-card theme-" + (st.theme || "clean");
+  // the look takes the whole page, bio-link style — not just the card
+  const look = NM.lookOf(data);
+  document.getElementById("card").className = "page-card theme-" + look;
+  document.body.classList.add("look-" + look);
   // emoji stays under the photo as a fallback: if /av 404s (e.g. KV not yet
   // propagated right after publish, or the photo was pulled), the img removes
   // itself and the broke-status emoji shows through — never a broken-image icon.
