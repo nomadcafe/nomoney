@@ -400,28 +400,98 @@ function renderShareRow(el, url, data) {
   if (nb) nb.onclick = () => { navigator.share({ title: "No Money", text: i.text, url }).catch(() => {}); };
 }
 
-/* ---------------- share image (1200x630 OG) ---------------- */
+/* ---------------- share image (1200x630 OG) ----------------
+   This is what strangers actually see in X / Telegram / Reddit, so it follows the page's
+   look (lookOf). The layout is fixed across looks — only surface, ink, type and
+   decoration change — so text fitting stays the same everywhere. */
+const SANS = "-apple-system, Segoe UI, Roboto, sans-serif";
+const MONO = "ui-monospace, Menlo, monospace";
+
+function shareStyle(look, accent) {
+  const base = {
+    ink: "#18191c", dim: "#565961", deep: mixHex(accent, "#18191c", 0.42),
+    sans: SANS, line: "#e7e0d3", chipBg: "#ffffff", chipInk: "#18191c",
+    pillBg: hexA(accent, 0.14), pillLine: hexA(accent, 0.4), pillW: 1, pillR: 25, chipLine: "#e7e0d3", chipW: 1,
+    watermark: 0.07, footY: 596, bandMin: 506,
+  };
+  const panel = { footY: 578, bandMin: 498 };   // looks that draw a card/paper inside the frame
+  switch (look) {
+    case "tint": return { ...base, bg: (ctx, W, H) => {
+      ctx.fillStyle = mixHex(accent, "#fbf8f3", 0.84); ctx.fillRect(0, 0, W, H);
+      glow(ctx, W * 0.5, -80, 820, hexA(accent, 0.22));
+      ctx.strokeStyle = hexA(accent, 0.35); ctx.lineWidth = 2; roundRect(ctx, 24, 24, W - 48, H - 48, 28); ctx.stroke();
+    }, pillR: 25 };
+    case "gradient": return { ...base, ...panel, bg: (ctx, W, H) => {
+      const g = ctx.createLinearGradient(0, 0, W * 0.55, H * 1.3);
+      g.addColorStop(0, mixHex(accent, "#ffffff", 0.38)); g.addColorStop(0.52, mixHex(accent, "#ffe3c4", 0.76)); g.addColorStop(1, "#fff4e8");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      roundRect(ctx, 28, 28, W - 56, H - 56, 40); ctx.fillStyle = "rgba(255,255,255,0.55)"; ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.95)"; ctx.lineWidth = 2; ctx.stroke();
+    }, chipBg: "rgba(255,255,255,0.8)", chipLine: "rgba(255,255,255,1)" };
+    case "dark": return { ...base, ink: "#f6f1ea", dim: "#b4a99c", deep: mixHex(accent, "#ffffff", 0.12),
+      line: "#38312a", chipBg: "#1c1814", chipInk: "#f6f1ea", chipLine: "#38312a", pillBg: hexA(accent, 0.2), pillLine: hexA(accent, 0.55),
+      watermark: 0.09, bg: (ctx, W, H) => {
+        ctx.fillStyle = "#12100e"; ctx.fillRect(0, 0, W, H);
+        glow(ctx, W * 0.5, -120, 860, hexA(accent, 0.34));
+        ctx.strokeStyle = "#38312a"; ctx.lineWidth = 2; ctx.strokeRect(24, 24, W - 48, H - 48);
+      } };
+    case "mono": return { ...base, ...panel, ink: "#1d1c1a", dim: "#4b4842", deep: "#1d1c1a", sans: MONO,
+      pillBg: "rgba(0,0,0,0)", pillLine: "#77726a", pillW: 2, pillR: 4, pillDash: [7, 5], chipBg: "#1d1c1a", chipInk: "#fffdf7", chipLine: "#1d1c1a",
+      watermark: 0.05, receipt: true, bg: (ctx, W, H) => {
+        ctx.fillStyle = "#ebe6db"; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#d3cbbb";
+        for (let y = 7; y < H; y += 14) for (let x = 7; x < W; x += 14) ctx.fillRect(x, y, 2, 2);
+        // paper with a torn (zigzag) bottom edge
+        const x0 = 40, x1 = W - 40, top = 18, bot = H - 22, tooth = 9, step = 18;
+        ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x1, top); ctx.lineTo(x1, bot);
+        for (let x = x1; x > x0; x -= step) { ctx.lineTo(x - step / 2, bot + tooth); ctx.lineTo(Math.max(x0, x - step), bot); }
+        ctx.closePath(); ctx.fillStyle = "#fffdf7"; ctx.fill();
+        ctx.strokeStyle = "#ddd6c8"; ctx.lineWidth = 1.5; ctx.stroke();
+      } };
+    case "brutal": return { ...base, ...panel, ink: "#111111", dim: "#34332f",
+      pillBg: "#ffffff", pillLine: "#111111", pillW: 3, chipBg: accent, chipInk: "#111111", chipLine: "#111111", chipW: 3,
+      watermark: 0.1, bg: (ctx, W, H) => {
+        ctx.fillStyle = mixHex(accent, "#ffe95c", 0.78); ctx.fillRect(0, 0, W, H);
+        roundRect(ctx, 42, 40, W - 74, H - 64, 30); ctx.fillStyle = "#111111"; ctx.fill();        // hard shadow
+        roundRect(ctx, 28, 26, W - 74, H - 64, 30); ctx.fillStyle = "#ffffff"; ctx.fill();
+        ctx.strokeStyle = "#111111"; ctx.lineWidth = 5; ctx.stroke();
+      } };
+    default: return { ...base, bg: (ctx, W, H) => {
+      ctx.fillStyle = "#faf7f2"; ctx.fillRect(0, 0, W, H);
+      glow(ctx, W * 0.82, -60, 760, hexA(accent, 0.16));
+      ctx.strokeStyle = "#e7e0d3"; ctx.lineWidth = 2; ctx.strokeRect(24, 24, W - 48, H - 48);
+    } };
+  }
+}
+function glow(ctx, x, y, r, color) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, color); g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+}
+// largest font size ≤ max at which every line fits maxW (names are user input — no fixed size is safe)
+function fitSize(ctx, weight, max, min, family, lines, maxW) {
+  let s = max;
+  for (; s > min; s -= 4) {
+    ctx.font = `${weight} ${s}px ${family}`;
+    if (lines.every(t => ctx.measureText(t).width <= maxW)) break;
+  }
+  return s;
+}
+
 function drawShareImage(canvas, data) {
-  const W = 1200, H = 630;
+  const W = 1200, H = 630, X = 72;
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
   const st = locStatus(STATUSES[data.status] || STATUSES.ramen);
   const bs = brokeScore(data);
-
   const L = lx();
-  const deep = mixHex(st.accent, "#18191c", 0.42); // accent darkened so it's legible as text on light
+  const S = shareStyle(lookOf(data), st.accent);
 
-  // bg — warm light, matching the page cards
-  ctx.fillStyle = "#faf7f2"; ctx.fillRect(0, 0, W, H);
-  const g = ctx.createRadialGradient(W * 0.82, -60, 0, W * 0.82, -60, 760);
-  g.addColorStop(0, hexA(st.accent, 0.16)); g.addColorStop(1, "rgba(250,247,242,0)");
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // frame
-  ctx.strokeStyle = "#e7e0d3"; ctx.lineWidth = 2; ctx.strokeRect(24, 24, W - 48, H - 48);
+  S.bg(ctx, W, H);
 
   // giant faint emoji watermark (bottom-right)
   ctx.save();
-  ctx.globalAlpha = 0.07;
+  ctx.globalAlpha = S.watermark;
   ctx.font = "360px -apple-system, Segoe UI, sans-serif";
   ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
   ctx.fillText(data.emoji || st.emoji, W - 20, H + 70);
@@ -429,60 +499,85 @@ function drawShareImage(canvas, data) {
   ctx.textAlign = "left";
 
   // status pill (top-left)
-  ctx.font = "600 24px ui-monospace, Menlo, monospace";
+  ctx.font = `600 24px ${MONO}`;
   const pillTxt = `${st.emoji}  ${st.label.toUpperCase()}`;
   const pw = ctx.measureText(pillTxt).width + 52;
-  roundRect(ctx, 72, 72, pw, 50, 25); ctx.fillStyle = hexA(st.accent, 0.14); ctx.fill();
-  ctx.strokeStyle = hexA(st.accent, 0.4); ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle = deep; ctx.fillText(pillTxt, 98, 104);
+  roundRect(ctx, X, 72, pw, 50, S.pillR); ctx.fillStyle = S.pillBg; ctx.fill();
+  ctx.save(); if (S.pillDash) ctx.setLineDash(S.pillDash);
+  ctx.strokeStyle = S.pillLine; ctx.lineWidth = S.pillW; ctx.stroke(); ctx.restore();
+  ctx.fillStyle = S.deep; ctx.fillText(pillTxt, X + 26, 104);
 
   // broke score chip (top-right)
-  ctx.font = "700 24px ui-monospace, Menlo, monospace";
+  ctx.font = `700 24px ${MONO}`;
   const scoreTxt = L.img.score(bs.score);
   const sw = ctx.measureText(scoreTxt).width + 52;
-  roundRect(ctx, W - 72 - sw, 72, sw, 50, 25); ctx.fillStyle = "#ffffff"; ctx.fill();
-  ctx.strokeStyle = "#e7e0d3"; ctx.lineWidth = 1; ctx.stroke();
-  ctx.fillStyle = "#18191c"; ctx.fillText(scoreTxt, W - 72 - sw + 26, 104);
+  roundRect(ctx, W - X - sw, 72, sw, 50, S.pillR); ctx.fillStyle = S.chipBg; ctx.fill();
+  ctx.strokeStyle = S.chipLine; ctx.lineWidth = S.chipW; ctx.stroke();
+  ctx.fillStyle = S.chipInk; ctx.fillText(scoreTxt, W - X - sw + 26, 104);
 
-  // headline: "X is 87% broke."
-  ctx.fillStyle = "#18191c";
-  ctx.font = "800 90px -apple-system, Segoe UI, Roboto, sans-serif";
-  ctx.fillText(L.img.h1(data.name || L.someoneName), 72, 232);
-  ctx.fillStyle = deep;
-  ctx.fillText(L.img.h2(bs.score), 72, 330);
+  // headline: "X is 87% broke." — each line shrinks on its own: a long name shouldn't
+  // also shrink the score, which is the punchline
+  const h1 = L.img.h1(data.name || L.someoneName), h2 = L.img.h2(bs.score);
+  ctx.font = `800 ${fitSize(ctx, 800, 90, 44, S.sans, [h1], W - X * 2)}px ${S.sans}`;
+  ctx.fillStyle = S.ink; ctx.fillText(h1, X, 232);
+  ctx.font = `800 ${fitSize(ctx, 800, 90, 44, S.sans, [h2], W - X * 2)}px ${S.sans}`;
+  ctx.fillStyle = S.deep; ctx.fillText(h2, X, 330);
 
   // the punchline — first line of their story (or status tagline)
   const quote = (data.story || "").split("\n")[0].trim() || st.tagline || L.img.quote;
-  ctx.fillStyle = "#565961";
-  ctx.font = "italic 400 34px -apple-system, Segoe UI, Roboto, sans-serif";
-  const qLines = wrapText(ctx, `“${quote}”`, W - 144).slice(0, 2);
-  qLines.forEach((ln, i) => ctx.fillText(ln, 72, 404 + i * 44));
+  ctx.fillStyle = S.dim;
+  ctx.font = S.receipt ? `400 30px ${MONO}` : `italic 400 34px ${SANS}`;
+  const qLines = clampLines(ctx, wrapText(ctx, `“${quote}”`, W - X * 2), 2, W - X * 2);
+  qLines.forEach((ln, i) => ctx.fillText(ln, X, 404 + i * 44));
   const afterQuote = 404 + qLines.length * 44;
 
-  // broke-band line (was a progress bar — dropped: no real money is tracked, and a
-  // fundraiser bar reads as crowdfunding, which this isn't)
-  ctx.fillStyle = deep; ctx.font = "700 30px ui-monospace, Menlo, monospace";
-  ctx.fillText(bs.band, 72, Math.max(afterQuote + 46, 506));
+  if (S.receipt) {   // till-receipt header + a dashed rule above the total
+    ctx.fillStyle = "#77726a"; ctx.font = `400 18px ${MONO}`; ctx.textAlign = "center";
+    ctx.fillText("*** NO REFUNDS · NO MONEY ***", W / 2, 54); ctx.textAlign = "left";
+    ctx.save(); ctx.setLineDash([10, 8]); ctx.strokeStyle = "#cfc8ba"; ctx.lineWidth = 2;
+    const ry = Math.max(afterQuote + 6, 470);
+    ctx.beginPath(); ctx.moveTo(X, ry); ctx.lineTo(W - X, ry); ctx.stroke(); ctx.restore();
+  }
 
-  // footer url
-  ctx.fillStyle = "#18191c"; ctx.font = "700 30px ui-monospace, Menlo, monospace";
-  ctx.fillText("no.money/", 72, 596);
-  ctx.fillStyle = deep;
-  ctx.fillText(data.handle || "you", 72 + ctx.measureText("no.money/").width, 596);
+  // footer: url on the left, broke band on the right of the same row (was its own row —
+  // with a two-line story it collided with the url). Long handle → band gets its own row.
+  // (No progress bar on purpose: no real money is tracked, and a fundraiser bar reads as
+  // crowdfunding, which this isn't.)
+  ctx.font = `700 30px ${MONO}`;
+  const pre = "no.money/", handle = data.handle || "you";
+  const urlW = ctx.measureText(pre + handle).width, bandW = ctx.measureText(bs.band).width;
+  ctx.fillStyle = S.ink; ctx.fillText(pre, X, S.footY);
+  ctx.fillStyle = S.deep; ctx.fillText(handle, X + ctx.measureText(pre).width, S.footY);
+  ctx.fillStyle = S.deep;
+  if (urlW + bandW + 48 <= W - X * 2) { ctx.textAlign = "right"; ctx.fillText(bs.band, W - X, S.footY); ctx.textAlign = "left"; }
+  else ctx.fillText(bs.band, X, Math.min(Math.max(afterQuote + 40, S.bandMin), S.footY - 44));
 }
 
-/* wrap text to a max pixel width, returns array of lines (uses current ctx.font) */
+/* wrap text to a max pixel width, returns array of lines (uses current ctx.font).
+   Breaks at spaces, and between any two CJK characters — Chinese/Japanese have no spaces,
+   so a space-only wrap ran a long story straight off the side of the share image. */
+const CJK = "\u3000-\u30ff\u3400-\u9fff\uf900-\ufaff\uff00-\uffef";
+const WRAP_TOKENS = new RegExp(`[${CJK}]|[^\\s${CJK}]+|\\s+`, "g");
 function wrapText(ctx, text, maxW) {
-  const words = String(text).split(/\s+/);
   const lines = [];
   let line = "";
-  for (const w of words) {
-    const test = line ? line + " " + w : w;
-    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+  for (const tok of String(text).match(WRAP_TOKENS) || []) {
+    if (/^\s+$/.test(tok)) { if (line) line += " "; continue; }
+    const test = line + tok;
+    if (ctx.measureText(test).width > maxW && line.trim()) { lines.push(line.trimEnd()); line = tok; }
     else line = test;
   }
-  if (line) lines.push(line);
+  if (line.trim()) lines.push(line.trimEnd());
   return lines;
+}
+/* at most n lines; if text was cut, end the last one with "…" (shortened until it fits) */
+function clampLines(ctx, lines, n, maxW) {
+  if (lines.length <= n) return lines;
+  const out = lines.slice(0, n);
+  let last = out[n - 1];
+  while (last && ctx.measureText(last + "…").width > maxW) last = last.slice(0, -1);
+  out[n - 1] = last.trimEnd() + "…";
+  return out;
 }
 
 function roundRect(ctx, x, y, w, h, r) {
