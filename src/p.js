@@ -39,7 +39,9 @@ function render() {
     const k0 = NM.canonKind(l.kind);
     const url = NM.normalizeTipUrl(k0, l.url) || l.url;
     l = { ...l, url };
-    const kind = NM.brandMismatch(k0, url) ? "custom" : k0;
+    // demo links are "#" placeholders, not user input — the anti-spoof rule would strip
+    // every brand off them and the example page showed two identical "🔗 Support link"s
+    const kind = (url !== "#" && NM.brandMismatch(k0, url)) ? "custom" : k0;
     const k = NM.PAYMENT_KINDS[kind] || NM.PAYMENT_KINDS.custom;
     const label = (lang() !== "en" && l[lang()]) ? l[lang()] : (l.label || NM.payLabel(kind));   // demos carry localized labels; user pages keep their own
     // these are visitor-clickable, user-submitted outbound links: nofollow+ugc so public
@@ -110,7 +112,7 @@ function renderMsgSection() {
     <div class="msg-form">
       <input id="mName" maxlength="24" placeholder="${esc(t("msg.name_ph"))}" />
       <textarea id="mText" maxlength="140" placeholder="${esc(t("msg.text_ph"))}"></textarea>
-      <button class="btn btn-primary btn-block" id="mSend">${esc(t("msg.post"))}</button>
+      <button class="btn btn-ghost btn-block" id="mSend">${esc(t("msg.post"))}</button>
     </div>` : "";
   // wall first (social proof pulls people in), form last ("now add yours"). on a cold
   // empty page the wall renders the "be the first" hint, which sits right above the input.

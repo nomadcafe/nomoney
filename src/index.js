@@ -121,3 +121,11 @@ document.title = t("title.index");
 renderAll();                               // render dynamic cards in the current language
 loadWall();                                // fetch + reveal the curated wall (no-op on static/local)
 window.addEventListener("langchange", () => { document.title = t("title.index"); renderAll(); });  // setLang already re-applied static text; lang picker is wired in i18n.js
+
+// carousels: drop the right-edge fade once there's nothing left to scroll to
+document.querySelectorAll(".demo-grid").forEach(g => {
+  const sync = () => g.classList.toggle("at-end", g.scrollLeft + g.clientWidth >= g.scrollWidth - 4);
+  g.addEventListener("scroll", sync, { passive: true });
+  new ResizeObserver(sync).observe(g);
+  new MutationObserver(sync).observe(g, { childList: true });
+});
